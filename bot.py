@@ -10,6 +10,7 @@ import sys
 import requests
 import numpy as np
 from discord.utils import get
+import psycopg2
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -20,14 +21,22 @@ bot = commands.Bot(command_prefix=["+", "!"])
  
 # Ready
 @bot.event
-async def on_ready():   
+async def on_ready():
+    db = sqlite3.connect('rsqueue.sqlite')
+    cursor = db.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS main(
+            user_id TEXT,
+            amount INTEGER,
+            level INTEGER
+        )
+    ''')
     print(f'{bot.user.name} has connected to Discord!')
     return await bot.change_presence(activity=discord.Activity(type=1, name="RS Queueing"))
 
 
 
-
-intital_extensions = ['cogs.queue']
+intital_extensions = ['cogs.queue', 'cogs.role']
 
 if __name__ == '__main__':
     for extension in intital_extensions:
