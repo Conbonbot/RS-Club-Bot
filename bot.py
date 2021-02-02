@@ -10,12 +10,16 @@ import sys
 import requests
 import numpy as np
 from discord.utils import get
+import discord
 import psycopg2
+
+intents = discord.Intents(messages=True, guilds=True)
+intents.reactions = True
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix=["+", "!"])
+bot = commands.Bot(command_prefix=["+", "!"], intents=intents)
 
 
  
@@ -33,7 +37,6 @@ async def on_ready():
     ''')
     print(f'{bot.user.name} has connected to Discord!')
     return await bot.change_presence(activity=discord.Activity(type=1, name="RS Queueing"))
-
 
 
 intital_extensions = ['cogs.queue', 'cogs.role']

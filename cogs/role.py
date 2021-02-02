@@ -28,9 +28,21 @@ class RSRole(commands.Cog, name='Role'):
         for emoji in emojis:
             await message.add_reaction(emoji)
 
+
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        print(self, payload)
+    async def on_raw_reaction_add(self, payload):
+        reaction = str(payload.emoji)
+        msg_id = payload.message_id
+        ch_id = payload.channel_id
+        user_id = payload.user_id
+        guild_id = payload.guild_id
+        print(reaction)
+        print("on_reaction_add called")
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        print("on_reaction_remove called")
+    
 
 
 
