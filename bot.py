@@ -29,6 +29,16 @@ async def on_ready():
     db = sqlite3.connect('rsqueue.sqlite')
     cursor = db.cursor()
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS main(
+            user_id TEXT,
+            amount INTEGER,
+            level INTEGER,
+            time INTEGER,
+            length INTEGER,
+            channel_id TEXT
+        )
+    ''')
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS data(
             user_id TEXT,
             croid INTEGER DEFAULT 0,

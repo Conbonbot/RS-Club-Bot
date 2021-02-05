@@ -119,6 +119,20 @@ class RSQueue(commands.Cog, name='Queue'):
     async def clear(self, ctx, limit: int):
         await ctx.channel.purge(limit=limit)
 
+    @commands.command()
+    async def clear_database(self, ctx, level=None):
+        if(level is not None):
+            self.sql_command("DELETE FROM main WHERE level=?", [(level)])
+            await ctx.send(f"The RS{level} queue has been cleared")
+        else:
+            db = sqlite3.connect('rsqueue.sqlite')
+            cursor = db.cursor()
+            cursor.execute("DELETE FROM main")
+            db.commit()
+            cursor.close()
+            db.close()
+            await ctx.send("All Queues have been cleared")
+
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
     async def _one(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
