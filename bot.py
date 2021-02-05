@@ -32,9 +32,13 @@ async def on_ready():
         CREATE TABLE IF NOT EXISTS main(
             user_id TEXT,
             amount INTEGER,
-            level INTEGER
+            level INTEGER,
+            time INTEGER
+            channel_id TEXT
         )
     ''')
+    #addColumn = "ALTER TABLE main ADD COLUMN channel_id TEXT"
+    #cursor.execute(addColumn)
     print(f'{bot.user.name} has connected to Discord!')
     return await bot.change_presence(activity=discord.Activity(type=1, name="RS Queueing"))
 
