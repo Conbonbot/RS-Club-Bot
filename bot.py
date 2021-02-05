@@ -29,12 +29,16 @@ async def on_ready():
     db = sqlite3.connect('rsqueue.sqlite')
     cursor = db.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS main(
+        CREATE TABLE IF NOT EXISTS data(
             user_id TEXT,
-            amount INTEGER,
-            level INTEGER,
-            time INTEGER
-            channel_id TEXT
+            croid INTEGER DEFAULT 0,
+            influence INTEGER DEFAULT 0,
+            nosanc INTEGER DEFAULT 0,
+            notele INTEGER DEFAULT 0,
+            rse INTEGER DEFAULT 0,
+            suppress INTEGER DEFAULT 0,
+            unity INTEGER DEFAULT 0,
+            veng INTEGER DEFAULT 0
         )
     ''')
     #addColumn = "ALTER TABLE main ADD COLUMN channel_id TEXT"
