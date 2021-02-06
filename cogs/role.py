@@ -34,7 +34,7 @@ class RSRole(commands.Cog, name='Role'):
         role_embed = discord.Embed(
             color = discord.Color.green()
         )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
         message = await ctx.send(embed=role_embed)
         for emoji in self.emojis.keys():
             await message.add_reaction(emoji)
@@ -71,14 +71,21 @@ class RSRole(commands.Cog, name='Role'):
                 rs_role = -2
             if(not payload.member.bot):
                 if(rs_role != -2):
+                    welcome_message = None
                     if(rs_role != -1):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'RS{rs_role}'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
                             if(str(role).startswith("RS")):
                                 await payload.member.remove_roles(role)
                     msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(120)
+                        await welcome_message.delete()
         
                     
 
