@@ -1,5 +1,6 @@
 import os
 import random
+from discord import message
 from dotenv import load_dotenv
 import sqlite3
 import datetime
@@ -41,6 +42,17 @@ class RSRole(commands.Cog, name='Role'):
         await ctx.message.delete()
 
     @commands.command()
+    async def role_34(self, ctx):
+        role_embed = discord.Embed(
+            color = discord.Color.red()
+        )
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        message = await ctx.send(embed=role_embed)
+        for emoji in self.emojis.keys():
+            await message.add_reaction(emoji)
+        await ctx.message.delete()
+
+    @commands.command()
     async def extra(self, ctx):
         croid = discord.utils.get(self.bot.emojis, name='croid')
         influence = discord.utils.get(self.bot.emojis, name='influence')
@@ -63,7 +75,7 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
-        if(payload.message_id == 806269333008678985):
+        if(payload.message_id == 808197508803067936):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -80,6 +92,30 @@ class RSRole(commands.Cog, name='Role'):
                     else:
                         for role in payload.member.roles:
                             if(str(role).startswith("RS")):
+                                await payload.member.remove_roles(role)
+                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(120)
+                        await welcome_message.delete()
+        elif(payload.message_id == 808197518894563329):
+            reaction = str(payload.emoji)
+            try:
+                rs_role = self.emojis[reaction]
+            except:
+                rs_role = -2
+            if(not payload.member.bot):
+                if(rs_role != -2):
+                    welcome_message = None
+                    if(rs_role != -1):
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'RS{rs_role} 1 more'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                    else:
+                        for role in payload.member.roles:
+                            print(role)
+                            if(str(role).find("1 more") != -1):
                                 await payload.member.remove_roles(role)
                     msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await msg.remove_reaction(reaction, payload.member)
