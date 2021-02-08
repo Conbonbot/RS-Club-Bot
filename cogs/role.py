@@ -1,6 +1,6 @@
 import os
 import random
-from discord import message
+from discord import embeds, message
 from dotenv import load_dotenv
 import sqlite3
 import datetime
@@ -27,7 +27,15 @@ class RSRole(commands.Cog, name='Role'):
             '❌' : -1,
         }
         self.extras = {
-            'croid' : discord.utils.get(self.bot.emojis, name='croid')
+            'croid' : discord.utils.get(self.bot.emojis, name='croid'),
+            'influence' : discord.utils.get(self.bot.emojis, name='influence'),
+            'nosanc' : discord.utils.get(self.bot.emojis, name='nosanc'),
+            'notele' : discord.utils.get(self.bot.emojis, name='notele'),
+            'rse' : discord.utils.get(self.bot.emojis, name='rse'),
+            'suppress' : discord.utils.get(self.bot.emojis, name='suppress'),
+            'unity' : discord.utils.get(self.bot.emojis, name='unity'),
+            'veng' : discord.utils.get(self.bot.emojis, name='veng'),
+            'barrage' : discord.utils.get(self.bot.emojis, name='barrage')
         }
 
     @commands.command()
@@ -46,7 +54,7 @@ class RSRole(commands.Cog, name='Role'):
         role_embed = discord.Embed(
             color = discord.Color.red()
         )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
         message = await ctx.send(embed=role_embed)
         for emoji in self.emojis.keys():
             await message.add_reaction(emoji)
@@ -63,8 +71,15 @@ class RSRole(commands.Cog, name='Role'):
         unity = discord.utils.get(self.bot.emojis, name='unity')
         veng = discord.utils.get(self.bot.emojis, name='veng')
         barrage = discord.utils.get(self.bot.emojis, name='barrage')
-        await ctx.send(str(croid) + str(influence) + str(nosanc) + str(notele) + str(rse) + str(suppress) + str(unity) + str(veng) + str(barrage))
-
+        #await ctx.send(str(croid) + str(influence) + str(nosanc) + str(notele) + str(rse) + str(suppress) + str(unity) + str(veng) + str(barrage))
+        extra_embed = discord.Embed(
+            color = discord.Color.blue()
+        )
+        extra_embed.add_field(name="Mod Settings", value=f"\nChoose any mods or information you want others to know about, most are self explanatory.\n\n {str(croid)}: Would like help getting croid.\n\n {str(influence)}: Need influence, need full clear.\n\n {str(nosanc)}: No Sanctuary on Battleships.\n\n {str(rse)}: Will provide RSE.\n\n {str(veng)}: Vengeance Player.\n\n {str(notele)}: No Teleport on either Battleship or Transport.\n\n {str(barrage)}: Barrage, best left alone, and if you help only take out capital ships.\n\n {str(suppress)}: Suppress present on Battleship(s).\n\n {str(unity)}: Unity present on Battleship(s).")
+        message = await ctx.send(embed=extra_embed)
+        for emoji in self.extras.keys():
+            await message.add_reaction(discord.utils.get(self.bot.emojis, name=emoji))
+        await ctx.message.delete()
 
 
 
@@ -85,20 +100,20 @@ class RSRole(commands.Cog, name='Role'):
                 if(rs_role != -2):
                     welcome_message = None
                     if(rs_role != -1):
-                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'RS{rs_role}'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
                         welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
-                            if(str(role).startswith("RS")):
+                            if(str(role).startswith("rs")):
                                 await payload.member.remove_roles(role)
                     msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await msg.remove_reaction(reaction, payload.member)
                     if(welcome_message is not None):
-                        await asyncio.sleep(120)
+                        await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808197518894563329):
+        elif(payload.message_id == 808208836027875349):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -108,19 +123,19 @@ class RSRole(commands.Cog, name='Role'):
                 if(rs_role != -2):
                     welcome_message = None
                     if(rs_role != -1):
-                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'RS{rs_role} 1 more'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
                         welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
                             print(role)
-                            if(str(role).find("1 more") != -1):
+                            if(str(role).find("¾ need1more") != -1):
                                 await payload.member.remove_roles(role)
                     msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await msg.remove_reaction(reaction, payload.member)
                     if(welcome_message is not None):
-                        await asyncio.sleep(120)
+                        await asyncio.sleep(60)
                         await welcome_message.delete()
         
                     
