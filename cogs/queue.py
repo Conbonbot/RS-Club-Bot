@@ -102,12 +102,19 @@ class RSQueue(commands.Cog, name='Queue'):
     # This returns how many minutes a person has been in a queue
     def time(self, user_id, level):
         print("Running the time command")
-        person = self.sql_command("SELECT time FROM main WHERE user_id=? AND level=?", (user_id, level))
+        db = sqlite3.connect("rsqueue.sqlite")
+        cursor = db.cursor()
+        cursor.execute("SELECT time FROM main WHERE user_id=? AND level=?", (user_id, level))
+        person = cursor.fetchall()
         print(person)
-        try:
-            return int((time.time() - int(person[0][0]))/60)
-        except:
+        print(time.time(), person[0][0])
+        if(int(time.time()) > int(person[0][0])):
+            difference = int(time.time()) - int(person[0][0])
+            minutes = int(difference/60)
+            return minutes
+        else:
             return -1
+
 
     def cog_unload(self):
         self.check_people.cancel()
