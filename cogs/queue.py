@@ -107,14 +107,10 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.execute("SELECT time FROM main WHERE user_id=? AND level=?", (user_id, level))
         person = cursor.fetchall()
         print(person)
-        print(time.time(), person[0][0])
-        if(int(time.time()) >= int(person[0][0])):
-            difference = int(time.time()) - int(person[0][0])
-            minutes = int(difference/60)
-            return minutes
-        else:
+        try:
+            return int((time.time() - int(person[0][0]))/60)
+        except:
             return -1
-
 
     def cog_unload(self):
         self.check_people.cancel()
@@ -263,7 +259,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                 for j in range(counting[i]):
                                     str_people += str(list(self.emojis)[emoji_count])
                                     emoji_count += 1
-                                str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                                 str_people += "\n"
                             queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                             await ctx.send(embed=queue_embed)
@@ -335,7 +331,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             for j in range(counting[i]):
                                                 str_people += str(list(self.emojis)[emoji_count])
                                                 emoji_count += 1
-                                            str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                            str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                                             str_people += "\n"
                                         queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                                         await ctx.send(embed=queue_embed)
@@ -409,7 +405,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         for j in range(counting[i]):
                             str_people += str(list(self.emojis)[emoji_count])
                             emoji_count += 1
-                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                        str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                         str_people += "\n"
                     queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                     await ctx.send(embed=queue_embed)
@@ -475,7 +471,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     for j in range(counting[i]):
                         str_people += str(list(self.emojis)[emoji_count])
                         emoji_count += 1
-                    str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                    str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                     str_people += "\n"
                 queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                 await ctx.send(embed=queue_embed)
@@ -568,7 +564,7 @@ class RSQueue(commands.Cog, name='Queue'):
                             for j in range(counting[i]):
                                 str_people += str(list(self.emojis)[emoji_count])
                                 emoji_count += 1
-                            str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                            str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                             str_people += "\n"
                         queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                         await ctx.send(embed=queue_embed)
@@ -641,7 +637,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                         for j in range(counting[i]):
                                             str_people += str(list(self.emojis)[emoji_count])
                                             emoji_count += 1
-                                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                        str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                                         str_people += "\n"
                                     queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
                                     await ctx.send(embed=queue_embed)
@@ -681,7 +677,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 for j in range(counting[i]):
                     str_people += str(list(self.emojis)[emoji_count])
                     emoji_count += 1
-                str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                str_people += " " + list_people[i] #+ " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
                 str_people += "\n"
             queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
             message = await ctx.send(embed=queue_embed)

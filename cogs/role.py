@@ -18,6 +18,7 @@ class RSRole(commands.Cog, name='Role'):
     def __init__(self, bot):
         self.bot = bot
         self.emojis = {
+            '5️⃣' : 5,
             '6️⃣' : 6,
             '7️⃣' : 7,
             '8️⃣' : 8,
