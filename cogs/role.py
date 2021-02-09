@@ -165,7 +165,7 @@ class RSRole(commands.Cog, name='Role'):
                     else:
                         for role in payload.member.roles:
                             print(role)
-                            if(str(role).find("¾ need1more") != -1):
+                            if(str(role).find(" s") != -1):
                                 await payload.member.remove_roles(role)
                     msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await msg.remove_reaction(reaction, payload.member)
