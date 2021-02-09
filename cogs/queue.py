@@ -229,7 +229,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                 print_people.append((await self.bot.fetch_user(person[0])).display_name)
                             await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                             await ctx.send("Meet where?")
-                            rs_log_channel = await self.bot.fetch_channel(806370539148541952)
+                            rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                             formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                             await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                             # Remove everyone from the queue
@@ -302,7 +302,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             print_people.append((await self.bot.fetch_user(person[0])).display_name)
                                         await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                         await ctx.send("Meet where?")
-                                        rs_log_channel = await self.bot.fetch_channel(806370539148541952)
+                                        rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                                         await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                         # Remove everyone from the queue
@@ -530,7 +530,7 @@ class RSQueue(commands.Cog, name='Queue'):
                             print_people.append((await self.bot.fetch_user(person[0])).display_name)
                         await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                         await ctx.send("Meet where?")
-                        rs_log_channel = await self.bot.fetch_channel(806370539148541952)
+                        rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                         await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                         # Remove everyone from the queue
@@ -608,7 +608,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                         print_people.append((await self.bot.fetch_user(person[0])).display_name)
                                     await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                     await ctx.send("Meet where?")
-                                    rs_log_channel = await self.bot.fetch_channel(806370539148541952)
+                                    rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                     formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                                     await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                     # Remove everyone from the queue
