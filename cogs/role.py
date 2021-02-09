@@ -82,7 +82,6 @@ class RSRole(commands.Cog, name='Role'):
         await ctx.message.delete()
 
 
-
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         # Example payload below
@@ -90,7 +89,7 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
-        if(payload.message_id == 808197508803067936):
+        if(payload.message_id == 808491796304232498):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -113,7 +112,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808208836027875349):
+        elif(payload.message_id == 808491813919916043):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
