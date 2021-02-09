@@ -199,12 +199,16 @@ class RSQueue(commands.Cog, name='Queue'):
             if(right_channel):
                 has_right_role = False
                 for role in ctx.author.roles:
-                    if(str(role)[2:].isnumeric()):
+                    if(str(role)[2:].isnumeric()): # Checks main role (rs#)
                         if(int(str(role)[2:]) >= int(self.rs_channel[channel])):
                             has_right_role = True
                             break
-                    elif(str(role)[2:-12].isnumeric()):
+                    elif(str(role)[2:-12].isnumeric()): # Checks 3/4 role (rs# 3/4 1more)
                         if(int(str(role)[2:-12]) >= int(self.rs_channel[channel])):
+                            has_right_role = True
+                            break
+                    elif(str(role)[2:-2].isnumeric()): # Checks silent role (rs# s)
+                        if(int(str(role)[2:-2]) >= int(self.rs_channel[channel])):
                             has_right_role = True
                             break
                     #if(str(role) == f'RS{self.rs_channel[channel]}' or int(str(role)[2:]) > self.rs_channel[channel]):

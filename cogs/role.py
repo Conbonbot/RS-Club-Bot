@@ -62,6 +62,16 @@ class RSRole(commands.Cog, name='Role'):
         await ctx.message.delete()
 
     @commands.command()
+    async def role_silent(self, ctx):
+        role_embed = discord.Embed(
+            color = discord.Color.dark_gray()
+        )
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS 3/4 Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        for emoji in self.emojis.keys():
+            await message.add_reaction(emoji)
+        await ctx.message.delete()
+
+    @commands.command()
     async def extra(self, ctx):
         croid = discord.utils.get(self.bot.emojis, name='croid')
         influence = discord.utils.get(self.bot.emojis, name='influence')
@@ -124,6 +134,30 @@ class RSRole(commands.Cog, name='Role'):
                     welcome_message = None
                     if(rs_role != -1):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                    else:
+                        for role in payload.member.roles:
+                            print(role)
+                            if(str(role).find("¾ need1more") != -1):
+                                await payload.member.remove_roles(role)
+                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(60)
+                        await welcome_message.delete()
+        elif(payload.message_id == 7): # actually set that later when it is ready
+            reaction = str(payload.emoji)
+            try:
+                rs_role = self.emojis[reaction]
+            except:
+                rs_role = -2
+            if(not payload.member.bot):
+                if(rs_role != -2):
+                    welcome_message = None
+                    if(rs_role != -1):
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
                         welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
