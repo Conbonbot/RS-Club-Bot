@@ -67,6 +67,7 @@ class RSRole(commands.Cog, name='Role'):
             color = discord.Color.dark_gray()
         )
         role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS 3/4 Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        message = await ctx.send(embed=role_embed)
         for emoji in self.emojis.keys():
             await message.add_reaction(emoji)
         await ctx.message.delete()
@@ -100,7 +101,7 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
-        if(payload.message_id == 808491796304232498):
+        if(payload.message_id == 808782626612838420):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -123,7 +124,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808491813919916043):
+        elif(payload.message_id == 808782649946669127):
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -147,7 +148,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 7): # actually set that later when it is ready
+        elif(payload.message_id == 808783057435623424): 
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -160,7 +161,7 @@ class RSRole(commands.Cog, name='Role'):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
-                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
                             print(role)
