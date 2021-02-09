@@ -108,7 +108,7 @@ class RSQueue(commands.Cog, name='Queue'):
         person = cursor.fetchall()
         print(person)
         print(time.time(), person[0][0])
-        if(int(time.time()) > int(person[0][0])):
+        if(int(time.time()) >= int(person[0][0])):
             difference = int(time.time()) - int(person[0][0])
             minutes = int(difference/60)
             return minutes
