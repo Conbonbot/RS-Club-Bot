@@ -66,7 +66,7 @@ class RSRole(commands.Cog, name='Role'):
         role_embed = discord.Embed(
             color = discord.Color.dark_gray()
         )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS 3/4 Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
         message = await ctx.send(embed=role_embed)
         for emoji in self.emojis.keys():
             await message.add_reaction(emoji)
@@ -148,7 +148,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808783057435623424): 
+        elif(payload.message_id == 808960926517559306): 
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
