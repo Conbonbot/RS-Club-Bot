@@ -152,14 +152,24 @@ class RSQueue(commands.Cog, name='Queue'):
         role = discord.utils.get(ctx.author.guild.roles, name='🌟')
         if role in ctx.author.roles:
             await ctx.author.remove_roles(role)
+            msg = await ctx.send("The RS Channels have been hidden")
+            await asyncio.sleep(15)
+            await ctx.message.delete()
+            await msg.delete
         else:
             await ctx.author.add_roles(role)
+            msg = await ctx.send("The RS Channels have been restored")
+            await asyncio.sleep(15)
+            await ctx.message.delete()
+            await msg.delete
 
     @commands.command()
+    @commands.has_role("mod")
     async def clear(self, ctx, limit: int):
         await ctx.channel.purge(limit=limit)
 
     @commands.command()
+    @commands.has_role("mod")
     async def clear_database(self, ctx, level=None):
         if(level is not None):
             self.sql_command("DELETE FROM main WHERE level=?", [(level)])
