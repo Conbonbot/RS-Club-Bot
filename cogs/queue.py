@@ -188,18 +188,15 @@ class RSQueue(commands.Cog, name='Queue'):
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
     async def _one(self, ctx, length=60):
-        if ctx.guild.id == 805959424081920022:
-            await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
+        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
 
     @commands.command(name='2', help="Type +2/-2, which will add you/remove you and another person to/from a RS Queue")
     async def _two(self, ctx, length=60):
-        if ctx.guild.id == 805959424081920022:
-            await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
+        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
     
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
     async def _three(self, ctx, length=60):
-        if ctx.guild.id == 805959424081920022:
-            await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
+        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
 
     async def everything(self, ctx, prefix, count, length, channel_id):
         print(f"Running the everything command")
