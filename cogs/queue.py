@@ -111,7 +111,7 @@ class RSQueue(commands.Cog, name='Queue'):
         db.commit()
         cursor.close()
         db.close()
-        print(person)
+        print("Results from the database: ", person)
         return int((time.time() - int(person[0]))/60)
 
 
@@ -246,7 +246,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                 print(people)
                                 for person in people:
                                     string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                                    print_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                    print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
                                 await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                 await ctx.send("Meet where?")
                                 rs_log_channel = await self.bot.fetch_channel(805228742678806599)
@@ -322,7 +322,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             print_people = []
                                             for person in people:
                                                 string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                                                print_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                                print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
                                             await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                             await ctx.send("Meet where?")
                                             rs_log_channel = await self.bot.fetch_channel(805228742678806599)
@@ -554,7 +554,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         print_people = []
                         for person in people:
                             string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                            print_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                            print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
                         await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                         await ctx.send("Meet where?")
                         rs_log_channel = await self.bot.fetch_channel(805228742678806599)
@@ -632,7 +632,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                     print_people = []
                                     for person in people:
                                         string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                                        print_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                        print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
                                     await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                     await ctx.send("Meet where?")
                                     rs_log_channel = await self.bot.fetch_channel(805228742678806599)
