@@ -41,36 +41,42 @@ class RSRole(commands.Cog, name='Role'):
 
     @commands.command()
     async def role(self, ctx):
-        role_embed = discord.Embed(
-            color = discord.Color.green()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-            await message.add_reaction(emoji)
-        await ctx.message.delete()
+        #role_embed = discord.Embed(
+        #    color = discord.Color.green()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #    await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(801610229040939038)
+        await ctx.send(f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_34(self, ctx):
-        role_embed = discord.Embed(
-            color = discord.Color.red()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-            await message.add_reaction(emoji)
-        await ctx.message.delete()
+        #role_embed = discord.Embed(
+        #    color = discord.Color.red()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #    await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(801610229040939038)
+        await ctx.send(f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_silent(self, ctx):
-        role_embed = discord.Embed(
-            color = discord.Color.dark_gray()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-            await message.add_reaction(emoji)
-        await ctx.message.delete()
+        #role_embed = discord.Embed(
+        #    color = discord.Color.dark_gray()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #    await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(801610229040939038)
+        await ctx.send(f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def extra(self, ctx):

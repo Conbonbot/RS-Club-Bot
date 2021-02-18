@@ -101,7 +101,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
     # This returns how many minutes a person has been in a queue
     def time(self, user_id, level):
-        print("Running the time command")
+        print(f"Running the time command. User ID: {user_id}, level: {level}")
         db = sqlite3.connect("rsqueue.sqlite")
         cursor = db.cursor()
         sql = "SELECT time FROM main WHERE user_id=? AND level=?"
@@ -269,21 +269,20 @@ class RSQueue(commands.Cog, name='Queue'):
                                 print("count: ", count)
                                 people_printing = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                                 list_people = []
-                                print("people before printing", people_printing)
+                                user_ids = []
                                 for people in people_printing:
-                                    person = await ctx.guild.fetch_member(people[0])
-                                    list_people.append(person.display_name)
-                                print("people: ", list_people)
+                                    list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                    user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                                 str_people = ""
                                 emoji_count = 0
                                 for i in range(len(people_printing)):
                                     for j in range(counting[i]):
                                         str_people += str(list(self.emojis)[emoji_count])
                                         emoji_count += 1
-                                    str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                    str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                                     str_people += "\n"
                                 queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                                await ctx.send(embed=queue_embed)
+                                message = await ctx.send(embed=queue_embed)
                                 if(self.amount(self.rs_channel[channel]) == 3):
                                     await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                 else:
@@ -343,19 +342,20 @@ class RSQueue(commands.Cog, name='Queue'):
                                                 count += int(person[0])
                                             people_printing = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                                             list_people = []
+                                            user_ids = []
                                             for people in people_printing:
-                                                print((await ctx.guild.fetch_member(people[0])).display_name)
                                                 list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                                user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                                             str_people = ""
                                             emoji_count = 0
                                             for i in range(len(people_printing)):
                                                 for j in range(counting[i]):
                                                     str_people += str(list(self.emojis)[emoji_count])
                                                     emoji_count += 1
-                                                str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                                str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                                                 str_people += "\n"
                                             queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                                            await ctx.send(embed=queue_embed)
+                                            message = await ctx.send(embed=queue_embed)
                                             if(self.amount(self.rs_channel[channel]) == 3):
                                                 await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                             else:
@@ -417,19 +417,20 @@ class RSQueue(commands.Cog, name='Queue'):
                 if(count > 0):
                     people_printing = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                     list_people = []
+                    user_ids = []
                     for people in people_printing:
-                        print((await ctx.guild.fetch_member(people[0])).display_name)
                         list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                        user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                     str_people = ""
                     emoji_count = 0
                     for i in range(len(people_printing)):
                         for j in range(counting[i]):
                             str_people += str(list(self.emojis)[emoji_count])
                             emoji_count += 1
-                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                         str_people += "\n"
                     queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                    await ctx.send(embed=queue_embed)
+                    message = await ctx.send(embed=queue_embed)
                 await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
         
 
@@ -483,19 +484,20 @@ class RSQueue(commands.Cog, name='Queue'):
             if(count > 0):
                 people_printing = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                 list_people = []
+                user_ids = []
                 for people in people_printing:
-                    print((await ctx.guild.fetch_member(people[0])).display_name)
                     list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                    user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                 str_people = ""
                 emoji_count = 0
                 for i in range(len(people_printing)):
                     for j in range(counting[i]):
                         str_people += str(list(self.emojis)[emoji_count])
                         emoji_count += 1
-                    str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                    str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                     str_people += "\n"
                 queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                await ctx.send(embed=queue_embed)
+                message = await ctx.send(embed=queue_embed)
             await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
         else:
             await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues")
@@ -580,19 +582,20 @@ class RSQueue(commands.Cog, name='Queue'):
                         cursor.execute(sql, [(add_level)])
                         people_printing = cursor.fetchall()
                         list_people = []
+                        user_ids = []
                         for people in people_printing:
-                            print((await ctx.guild.fetch_member(people[0])).display_name)
                             list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                            user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                         str_people = ""
                         emoji_count = 0
                         for i in range(len(people_printing)):
                             for j in range(counting[i]):
                                 str_people += str(list(self.emojis)[emoji_count])
                                 emoji_count += 1
-                            str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                            str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                             str_people += "\n"
                         queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                        await ctx.send(embed=queue_embed)
+                        message = await ctx.send(embed=queue_embed)
                         if(self.amount(self.rs_channel[channel]) == 3):
                                 await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                         else:
@@ -653,19 +656,20 @@ class RSQueue(commands.Cog, name='Queue'):
                                         count += int(person[0])
                                     people_printing = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                                     list_people = []
+                                    user_ids = []
                                     for people in people_printing:
-                                        print((await ctx.guild.fetch_member(people[0])).display_name)
                                         list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                                        user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                                     str_people = ""
                                     emoji_count = 0
                                     for i in range(len(people_printing)):
                                         for j in range(counting[i]):
                                             str_people += str(list(self.emojis)[emoji_count])
                                             emoji_count += 1
-                                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                                        str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                                         str_people += "\n"
                                     queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
-                                    await ctx.send(embed=queue_embed)
+                                    message = await ctx.send(embed=queue_embed)
                                     if(self.amount(self.rs_channel[channel]) == 3):
                                         await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                     else:
@@ -693,16 +697,17 @@ class RSQueue(commands.Cog, name='Queue'):
             cursor.execute(sql, [(self.rs_channel[str(ctx.message.channel)])])
             people_printing = cursor.fetchall()
             list_people = []
+            user_ids = []
             for people in people_printing:
-                print((await ctx.guild.fetch_member(people[0])).display_name)
                 list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
+                user_ids.append((await ctx.guild.fetch_member(people[0])).id)
             str_people = ""
             emoji_count = 0
             for i in range(len(people_printing)):
                 for j in range(counting[i]):
                     str_people += str(list(self.emojis)[emoji_count])
                     emoji_count += 1
-                str_people += " " + list_people[i] + " 🕒 " + str(self.time(ctx.author.id, self.rs_channel[str(ctx.message.channel)])) + "m"
+                str_people += " " + list_people[i] + " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                 str_people += "\n"
             queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
             message = await ctx.send(embed=queue_embed)
