@@ -19,8 +19,8 @@ intents = discord.Intents(messages=True, guilds=True)
 intents.reactions = True
 
 load_dotenv()
-#TOKEN = os.getenv('DISCORD_TOKEN')
-TOKEN = os.getenv('TEMP_DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_TOKEN')
+#TOKEN = os.getenv('TEMP_DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix=["+", "!", "-"], intents=intents, case_insensitive=True, help_command=None)
 
