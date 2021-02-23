@@ -146,6 +146,7 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
+
     @commands.command(aliases=["yes", "y"])
     async def confirm(self, ctx, level):
         self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, level))
