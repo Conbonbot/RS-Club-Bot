@@ -12,6 +12,7 @@ import requests
 import numpy as np
 from discord.utils import get
 from discord.ext.commands import Cog, command
+import time
 
 class RSRole(commands.Cog, name='Role'):
 
@@ -38,6 +39,25 @@ class RSRole(commands.Cog, name='Role'):
             'veng' : discord.utils.get(self.bot.emojis, name='veng'),
             'barrage' : discord.utils.get(self.bot.emojis, name='barrage')
         }
+
+    def sql_command(self, sql, val, data='rsqueue.sqlite'):
+        db = sqlite3.connect(data)
+        cursor = db.cursor()
+        cursor.execute(sql, val)
+        results = cursor.fetchall()
+        db.commit()
+        cursor.close()
+        db.close()
+        return results
+
+    def amount(self, level):
+        people = self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
+        count = 0
+        counting = []
+        for person in people:
+            counting.append(person[0])
+            count += int(person[0])
+        return count
 
     @commands.command()
     async def role(self, ctx):
@@ -98,6 +118,8 @@ class RSRole(commands.Cog, name='Role'):
         for emoji in self.extras.keys():
             await message.add_reaction(discord.utils.get(self.bot.emojis, name=emoji))
         await ctx.message.delete()
+
+    
 
 
     @commands.Cog.listener()
@@ -178,6 +200,47 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
+        else:
+            db = sqlite3.connect("rsqueue.sqlite")
+            cursor = db.cursor()
+            sql = "SELECT user_id, message_id, level FROM temp WHERE message_id=?"
+            cursor.execute(sql, [(payload.message_id)])
+            results = cursor.fetchone()
+            print(results)
+            if results is not None:
+                print(results[0], payload.member.id)
+                if(int(results[0]) == int(payload.member.id)):
+                    if str(payload.emoji) == '✅':
+                        sql = "UPDATE main SET time=? WHERE user_id=? AND level=?" 
+                        val = (int(time.time()), payload.member.id, results[2])
+                        cursor.execute(sql, val)
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        await channel.send(f'{payload.member.mention}, you are requed for a RS{results[2]}! ({self.amount(results[2])}/4)')
+                    elif str(payload.emoji) == '❌':
+                        sql = "DELETE FROM main WHERE user_id=? AND level=?"
+                        val = (results[0], results[2])
+                        cursor.execute(sql, val)
+                        user = await self.bot.fetch_user(results[0])
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        await channel.send(f"{user.display_name} has left RS{results[2]} ({self.amount(results[2])}/4)")
+                        self.sql_command("DELETE FROM temp WHERE message_id=?", [(results[1])])
+                elif(int(payload.member.id) != self.bot.user.id):
+                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await message.remove_reaction(str(payload.emoji), payload.member)
+                    channel = await self.bot.fetch_channel(payload.channel_id)
+                    await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
+
+            db.commit()
+            cursor.close()
+            db.close()
+            #self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, level))
+            #await ctx.send(f"{ctx.author.mention}, you are requed for a RS{level}! ({self.amount(level)}/4)")
         
                     
 

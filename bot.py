@@ -79,6 +79,13 @@ async def on_ready():
             veng INTEGER DEFAULT 0
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS temp(
+            user_id TEXT,
+            message_id TEXT,
+            level INTEGER
+        )
+    ''')
     #addColumn = "ALTER TABLE main ADD COLUMN channel_id TEXT"
     #cursor.execute(addColumn)
     print(f'{bot.user.name} has connected to Discord!')
