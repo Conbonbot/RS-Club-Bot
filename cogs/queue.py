@@ -158,6 +158,23 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
+    @commands.command(pass_context=True)
+    async def corp(self, ctx, corp, bonus=None):
+        member = await ctx.guild.fetch_member(ctx.author.id)
+        print(member.display_name)
+        if(member.display_name.startswith("[")):
+            name = member.display_name[member.display_name.find("]")+2:]
+        else:
+            name = member.display_name
+        if bonus is None:
+            nick = f"[{corp}] " + name
+        else:
+            nick = f"[{corp} ({bonus})] " + name
+        await member.edit(nick=nick)
+        await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
+
+
+
     @commands.command()
     async def rsc(self, ctx):
         role = discord.utils.get(ctx.author.guild.roles, name='🌟')
