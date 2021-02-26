@@ -158,14 +158,6 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
-    @commands.command(pass_context=True)
-    async def corp(self, ctx, corp):
-        member = await ctx.guild.fetch_member(ctx.author.id)
-        await ctx.send(ctx.author.display_name)
-        await member.edit(nick="Bruh")
-        await ctx.send("name changed")
-
-
     @commands.command()
     async def rsc(self, ctx):
         role = discord.utils.get(ctx.author.guild.roles, name='🌟')
