@@ -143,7 +143,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 val = (user.id, message.id, queue_time[3])
                 cursor.execute(sql, val)
                 pass
-            elif(minutes == queue_time[1]+3):
+            elif(minutes == queue_time[1]+5):
                 self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
