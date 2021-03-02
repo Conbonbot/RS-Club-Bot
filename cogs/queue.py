@@ -158,6 +158,13 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
+    @commands.command(aliases=["r", "^", "staying", "re", "stayin", "YOUGOTILISTARED"])
+    async def refresh(self, ctx):
+        
+        self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
+        await ctx.send(f"{ctx.author.mention}, you are requed for a RS{self.rs_channel[str(ctx.message.channel)]}! ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
+
+
     @commands.command(pass_context=True)
     async def corp(self, ctx, corp):
         member = await ctx.guild.fetch_member(ctx.author.id)
