@@ -18,6 +18,7 @@ class RSRole(commands.Cog, name='Role'):
 
     def __init__(self, bot):
         self.bot = bot
+        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage"]
         self.emojis = {
             '5️⃣' : 5,
             '6️⃣' : 6,
@@ -98,8 +99,8 @@ class RSRole(commands.Cog, name='Role'):
         channel = await self.bot.fetch_channel(801610229040939038)
         await ctx.send(f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
-    @commands.command()
-    async def extra(self, ctx):
+    @commands.group(invoke_without_command=True)
+    async def rsmod(self, ctx):
         croid = discord.utils.get(self.bot.emojis, name='croid')
         influence = discord.utils.get(self.bot.emojis, name='influence')
         nosanc = discord.utils.get(self.bot.emojis, name='nosanc')
@@ -113,11 +114,38 @@ class RSRole(commands.Cog, name='Role'):
         extra_embed = discord.Embed(
             color = discord.Color.blue()
         )
-        extra_embed.add_field(name="Mod Settings", value=f"\nChoose any mods or information you want others to know about, most are self explanatory.\n\n {str(croid)}: Would like help getting croid.\n\n {str(influence)}: Need influence, need full clear.\n\n {str(nosanc)}: No Sanctuary on Battleships.\n\n {str(rse)}: Will provide RSE.\n\n {str(veng)}: Vengeance Player.\n\n {str(notele)}: No Teleport on either Battleship or Transport.\n\n {str(barrage)}: Barrage, best left alone, and if you help only take out capital ships.\n\n {str(suppress)}: Suppress present on Battleship(s).\n\n {str(unity)}: Unity present on Battleship(s).")
+        extra_embed.add_field(name="Mod Settings", value=f"\nChoose any mods or information you want others to know about, most are self explanatory.\n\n {str(croid)} Croid: Would like help getting croid.\n\n {str(influence)} Influence: Need influence, need full clear.\n\n {str(nosanc)} Nosanc: No Sanctuary on Battleships.\n\n {str(rse)} RSE: Will provide RSE.\n\n {str(veng)} Veng: Vengeance Player.\n\n {str(notele)} Notele: No Teleport on either Battleship or Transport.\n\n {str(barrage)} Barrage: Barrage, best left alone, and if you help only take out capital ships.\n\n {str(suppress)} Suppress: Suppress present on Battleship(s).\n\n {str(unity)} Unity: Unity present on Battleship(s).")
         message = await ctx.send(embed=extra_embed)
         for emoji in self.extras.keys():
             await message.add_reaction(discord.utils.get(self.bot.emojis, name=emoji))
-        await ctx.message.delete()
+        
+    @rsmod.group()
+    async def on(self, ctx, mod):
+        if mod.lower() in self.current_mods:
+            # Check to see if they already are in the data table
+            results = self.sql_command("SELECT user_id FROM data WHERE user_id=?", [(ctx.author.id)])
+            if(len(results) == 0):
+                self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+            else:
+                self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
+            await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+        else:
+            str_mods = ""
+            for str_mod in self.current_mods:
+                str_mods += "**" + str_mod + "**" + ", "
+            await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+
+    @rsmod.group()
+    async def off(self, ctx, mod):
+        if mod.lower() in self.current_mods:
+            self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
+            await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+        else:
+            str_mods = ""
+            for str_mod in self.current_mods:
+                str_mods += "**" + str_mod + "**" + ", "
+            await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+
 
     
 
@@ -235,6 +263,8 @@ class RSRole(commands.Cog, name='Role'):
                     await message.remove_reaction(str(payload.emoji), payload.member)
                     channel = await self.bot.fetch_channel(payload.channel_id)
                     await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
+
+        
 
             db.commit()
             cursor.close()

@@ -19,8 +19,8 @@ intents = discord.Intents(messages=True, guilds=True)
 intents.reactions = True
 
 load_dotenv()
-#TOKEN = os.getenv('DISCORD_TOKEN')
-TOKEN = os.getenv('TEMP_DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_TOKEN')
+#TOKEN = os.getenv('TEMP_DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix=["+", "!", "-"], intents=intents, case_insensitive=True, help_command=None)
 
@@ -76,7 +76,8 @@ async def on_ready():
             rse INTEGER DEFAULT 0,
             suppress INTEGER DEFAULT 0,
             unity INTEGER DEFAULT 0,
-            veng INTEGER DEFAULT 0
+            veng INTEGER DEFAULT 0,
+            barrage INTEGER DEFAULT 0
         )
     ''')
     cursor.execute('''
@@ -86,7 +87,7 @@ async def on_ready():
             level INTEGER
         )
     ''')
-    #addColumn = "ALTER TABLE main ADD COLUMN channel_id TEXT"
+    #addColumn = "ALTER TABLE data ADD COLUMN barrage INTEGER DEFAULT 0"
     #cursor.execute(addColumn)
     print(f'{bot.user.name} has connected to Discord!')
     return await bot.change_presence(activity=discord.Activity(type=1, name="RS Queueing"))
