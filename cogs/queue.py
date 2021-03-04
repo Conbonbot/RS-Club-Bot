@@ -303,6 +303,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                     list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
                                     user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                                     result = self.sql_command("SELECT * FROM data WHERE user_id=?", [((await ctx.guild.fetch_member(people[0])).id)])
+                                    print(result)
                                     temp = ""
                                     for i in range(1,len(result[0])):
                                         if result[0][i] == 1:
