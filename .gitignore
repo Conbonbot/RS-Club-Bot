@@ -1,4 +1,7 @@
 .env
+.idea/
 .vscode/
+*.pyc
 *.sqlite
 running.txt
+secrets.env

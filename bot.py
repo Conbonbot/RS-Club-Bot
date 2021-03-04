@@ -1,26 +1,19 @@
+#!/bin/python3
 import os
-import random
-from attr import __description__
-from discord import embeds
-from dotenv import load_dotenv
-import sqlite3
-import datetime
-from discord.ext import commands
-import discord
-import asyncio
 import sys
-import requests
-import numpy as np
-from discord.utils import get
+
 import discord
-import psycopg2
+import sqlite3
+
+from discord.ext import commands
+from dotenv import load_dotenv
 
 intents = discord.Intents(messages=True, guilds=True)
 intents.reactions = True
 
-load_dotenv()
-#TOKEN = os.getenv('DISCORD_TOKEN')
-TOKEN = os.getenv('TEMP_DISCORD_TOKEN')
+if not TOKEN:
+    raise ValueError('Found no discord token, please specify a DISCORD_TOKEN or TEMP_DISCORD_TOKEN environment variable.')
+
 
 bot = commands.Bot(command_prefix=["+", "!", "-"], intents=intents, case_insensitive=True, help_command=None)
 
