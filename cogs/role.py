@@ -115,9 +115,10 @@ class RSRole(commands.Cog, name='Role'):
             color = discord.Color.blue()
         )
         extra_embed.add_field(name="Mod Settings", value=f"\nChoose any mods or information you want others to know about, most are self explanatory.\n\n {str(croid)} Croid: Would like help getting croid.\n\n {str(influence)} Influence: Need influence, need full clear.\n\n {str(nosanc)} Nosanc: No Sanctuary on Battleships.\n\n {str(rse)} RSE: Will provide RSE.\n\n {str(veng)} Veng: Vengeance Player.\n\n {str(notele)} Notele: No Teleport on either Battleship or Transport.\n\n {str(barrage)} Barrage: Barrage, best left alone, and if you help only take out capital ships.\n\n {str(suppress)} Suppress: Suppress present on Battleship(s).\n\n {str(unity)} Unity: Unity present on Battleship(s).")
-        message = await ctx.send(embed=extra_embed)
-        for emoji in self.extras.keys():
-            await message.add_reaction(discord.utils.get(self.bot.emojis, name=emoji))
+        await ctx.send(embed=extra_embed)
+        await ctx.send("If you'd like any of these to show up when you enter a queue, type `!rsmod on ModName`, and it will be added. If you'd like to remove it, type `!rsmod off ModName`")
+        #for emoji in self.extras.keys():
+        #    await message.add_reaction(discord.utils.get(self.bot.emojis, name=emoji))
         
     @rsmod.group()
     async def on(self, ctx, mod):
