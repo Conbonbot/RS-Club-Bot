@@ -426,6 +426,7 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
+    # Test
     @commands.command(aliases=["in", "i"], help="Use this command (!i or !in) to join a RS Queue")
     async def rs(self, ctx, length=60):
         right_channel = False
