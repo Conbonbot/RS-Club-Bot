@@ -165,7 +165,7 @@ class RSRole(commands.Cog, name='Role'):
                 self.sql_command(f"INSERT INTO data(user_id, {mod.lower()}) VALUES(?,?)", (ctx.author.id, 1))
             else:
                 self.sql_command(f"UPDATE data SET {mod.lower()}=? WHERE user_id=?", (1, ctx.author.id))
-            await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            await ctx.send(f"{ctx.author.mention}, {mod.lower()} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod.lower()}'))} next to your name")
         else:
             str_mods = ""
             for str_mod in current_mods:
@@ -200,7 +200,7 @@ class RSRole(commands.Cog, name='Role'):
         db.close()
         if mod.lower() in current_mods:
             self.sql_command(f"UPDATE data SET {mod.lower()}=? WHERE user_id=?", (0, ctx.author.id))
-            await ctx.send(f"{ctx.author.mention}, {mod.lower()} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            await ctx.send(f"{ctx.author.mention}, {mod.lower()} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod.lower()}'))} next to your name")
         else:
             str_mods = ""
             for str_mod in current_mods:
