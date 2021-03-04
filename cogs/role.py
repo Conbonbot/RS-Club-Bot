@@ -162,9 +162,9 @@ class RSRole(commands.Cog, name='Role'):
             # Check to see if they already are in the data table
             results = self.sql_command("SELECT user_id FROM data WHERE user_id=?", [(ctx.author.id)])
             if(len(results) == 0):
-                self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+                self.sql_command(f"INSERT INTO data(user_id, {mod.lower()}) VALUES(?,?)", (ctx.author.id, 1))
             else:
-                self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
+                self.sql_command(f"UPDATE data SET {mod.lower()}=? WHERE user_id=?", (1, ctx.author.id))
             await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:
             str_mods = ""
@@ -199,8 +199,8 @@ class RSRole(commands.Cog, name='Role'):
         cursor.close()
         db.close()
         if mod.lower() in current_mods:
-            self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
-            await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            self.sql_command(f"UPDATE data SET {mod.lower()}=? WHERE user_id=?", (0, ctx.author.id))
+            await ctx.send(f"{ctx.author.mention}, {mod.lower()} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:
             str_mods = ""
             for str_mod in current_mods:
