@@ -11,11 +11,9 @@ from dotenv import load_dotenv
 intents = discord.Intents(messages=True, guilds=True)
 intents.reactions = True
 
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN') or os.getenv('TEMP_DISCORD_TOKEN')
-
 if not TOKEN:
     raise ValueError('Found no discord token, please specify a DISCORD_TOKEN or TEMP_DISCORD_TOKEN environment variable.')
+
 
 bot = commands.Bot(command_prefix=["+", "!", "-"], intents=intents, case_insensitive=True, help_command=None)
 
