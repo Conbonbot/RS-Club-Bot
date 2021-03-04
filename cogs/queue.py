@@ -23,7 +23,7 @@ class RSQueue(commands.Cog, name='Queue'):
         self.bot = bot
         self.index = 0
         self.check_people.start()
-        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage"]
+        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "dart", "laser", "battery", "solo", "solo2"]
         self.rs_channel = {
             "rs5-club" : 5, 
             "rs6-club" : 6,
@@ -143,7 +143,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 sql = "INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)"
                 val = (user.id, message.id, queue_time[3])
                 cursor.execute(sql, val)
-                pass
             elif(minutes == queue_time[1]+5):
                 self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
@@ -154,7 +153,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 message = await channel.fetch_message(id[0][0])
                 await message.delete()
                 self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                pass
         db.commit()
         cursor.close()
         db.close()
@@ -554,6 +552,22 @@ class RSQueue(commands.Cog, name='Queue'):
 
 
     async def print_queue(self, ctx, level, display=True):
+        extras = {
+            'croid' : discord.utils.get(self.bot.emojis, name='croid'),
+            'influence' : discord.utils.get(self.bot.emojis, name='influence'),
+            'nosanc' : discord.utils.get(self.bot.emojis, name='nosanc'),
+            'notele' : discord.utils.get(self.bot.emojis, name='notele'),
+            'rse' : discord.utils.get(self.bot.emojis, name='rse'),
+            'suppress' : discord.utils.get(self.bot.emojis, name='suppress'),
+            'unity' : discord.utils.get(self.bot.emojis, name='unity'),
+            'veng' : discord.utils.get(self.bot.emojis, name='veng'),
+            'barrage' : discord.utils.get(self.bot.emojis, name='barrage'),
+            'laser' : discord.utils.get(self.bot.emojis, name='laser'),
+            'dart' : discord.utils.get(self.bot.emojis, name='dart'),
+            'battery' : discord.utils.get(self.bot.emojis, name='battery'),
+            'solo' : discord.utils.get(self.bot.emojis, name='solo'),
+            'solo2' : discord.utils.get(self.bot.emojis, name='solo2')
+        }
         queue_embed = discord.Embed(
             color = discord.Color.red()
         )
@@ -567,7 +581,6 @@ class RSQueue(commands.Cog, name='Queue'):
         for person in people:
             counting.append(person[0])
             count += int(person[0])
-            print(person)
         if(count > 0):
             sql = "SELECT user_id FROM main WHERE level=?"
             cursor.execute(sql, [(level)])
@@ -579,12 +592,15 @@ class RSQueue(commands.Cog, name='Queue'):
                 list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
                 user_ids.append((await ctx.guild.fetch_member(people[0])).id)
                 result = self.sql_command("SELECT * FROM data WHERE user_id=?", [((await ctx.guild.fetch_member(people[0])).id)])
+                stuff = cursor.execute('select * from data')
+                names = [description[0] for description in stuff.description]
+                print(names)
+                names = names[1:]
                 temp = ""
                 if(len(result) != 0):
                     for i in range(1,len(result[0])):
                         if result[0][i] == 1:
-                            if result[0][i] == 1:
-                                temp += " " + (str(discord.utils.get(self.bot.emojis, name=f'{self.current_mods[i-1]}')))
+                            temp += " " + (str(extras[names[i-1]]))
                 rsmods.append(temp)
             str_people = ""
             emoji_count = 0

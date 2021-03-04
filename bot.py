@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 intents = discord.Intents(messages=True, guilds=True)
 intents.reactions = True
 
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN') or os.getenv('TEMP_DISCORD_TOKEN')
 if not TOKEN:
     raise ValueError('Found no discord token, please specify a DISCORD_TOKEN or TEMP_DISCORD_TOKEN environment variable.')
 
@@ -59,6 +61,7 @@ async def on_ready():
             channel_id TEXT
         )
     ''')
+    #cursor.execute('DROP TABLE IF EXISTS data')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS data(
             user_id TEXT,
@@ -70,7 +73,12 @@ async def on_ready():
             suppress INTEGER DEFAULT 0,
             unity INTEGER DEFAULT 0,
             veng INTEGER DEFAULT 0,
-            barrage INTEGER DEFAULT 0
+            barrage INTEGER DEFAULT 0,
+            laser INTEGER DEFAULT 0,
+            battery INTEGER DEFAULT 0,
+            dart INTEGER DEFAULT 0,
+            solo INTEGER DEFAULT 0,
+            solo2 INTEGER DEFAULT 0
         )
     ''')
     cursor.execute('''
@@ -80,7 +88,15 @@ async def on_ready():
             level INTEGER
         )
     ''')
-    #addColumn = "ALTER TABLE data ADD COLUMN barrage INTEGER DEFAULT 0"
+    #addColumn = "ALTER TABLE data ADD COLUMN laser INTEGER DEFAULT 0"
+    #cursor.execute(addColumn)
+    #addColumn = "ALTER TABLE data ADD COLUMN dart INTEGER DEFAULT 0"
+    #cursor.execute(addColumn)
+    #addColumn = "ALTER TABLE data ADD COLUMN solo INTEGER DEFAULT 0"
+    #cursor.execute(addColumn)
+    #addColumn = "ALTER TABLE data ADD COLUMN battery INTEGER DEFAULT 0"
+    #cursor.execute(addColumn)
+    #addColumn = "ALTER TABLE data ADD COLUMN solo2 INTEGER DEFAULT 0"
     #cursor.execute(addColumn)
     print(f'{bot.user.name} has connected to Discord!')
     return await bot.change_presence(activity=discord.Activity(type=1, name="RS Queueing"))
