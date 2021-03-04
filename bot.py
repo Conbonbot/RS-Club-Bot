@@ -61,7 +61,7 @@ async def on_ready():
             channel_id TEXT
         )
     ''')
-    cursor.execute('DROP TABLE IF EXISTS data')
+    #cursor.execute('DROP TABLE IF EXISTS data')
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS data(
             user_id TEXT,
