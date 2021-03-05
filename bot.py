@@ -56,17 +56,6 @@ class RSClubBot(commands.Bot):
         """Makes sure the database has the required tables for the bot."""
         with sqlite3.connect('rsqueue.sqlite') as db:
             cursor = db.cursor()
-            # TODO: Cleanup at some point.
-            # addColumn = "ALTER TABLE data ADD COLUMN laser INTEGER DEFAULT 0"
-            # cursor.execute(addColumn)
-            # addColumn = "ALTER TABLE data ADD COLUMN dart INTEGER DEFAULT 0"
-            # cursor.execute(addColumn)
-            # addColumn = "ALTER TABLE data ADD COLUMN solo INTEGER DEFAULT 0"
-            # cursor.execute(addColumn)
-            # addColumn = "ALTER TABLE data ADD COLUMN battery INTEGER DEFAULT 0"
-            # cursor.execute(addColumn)
-            # addColumn = "ALTER TABLE data ADD COLUMN solo2 INTEGER DEFAULT 0"
-            # cursor.execute(addColumn)
             for table in DB_TABLES:
                 LOGGER.debug(f'Creating DB table: {table}')
                 cursor.execute(f'CREATE TABLE IF NOT EXISTS {table}')
