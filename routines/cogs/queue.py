@@ -1,84 +1,94 @@
-import os
-import random
-from sqlite3.dbapi2 import DatabaseError
-from typing import final
-from discord import channel, embeds, message
-from dotenv import load_dotenv
-import sqlite3
-import datetime
-from discord.ext import commands, tasks
-import discord
 import asyncio
-import sys
-import requests
-import numpy as np
-from discord.utils import get
-from datetime import datetime
-from discord.ext.commands import Cog, command
 import time
 
-class RSQueue(commands.Cog, name='Queue'):
+import discord
+import sqlite3
+
+from datetime import datetime
+from discord.ext import commands, tasks
+
+from bot import LOGGER
+from bot import TESTING
+
+from routines.cogs import Cog
+
+
+# TODO: Use an actual settings file for these and channel/message ids.
+RS_GROUPS = {
+    'prod': {
+        'rs_ping': {
+            "RS5": "<@&785786197531295755>",
+            "RS6": "<@&785786579826245642>",
+            "RS7": "<@&785786709517795328>",
+            "RS8": "<@&785786792350711808>",
+            "RS9": "<@&785786898920374273>",
+            "RS10": "<@&785786957782319104>",
+            "RS11": "<@&800957912180457494>"
+        },
+        'rs_ping_1more': {
+            "RS5": "<@&800958080208732231>",
+            "RS6": "<@&805597027458744321>",
+            "RS7": "<@&805597168849256489>",
+            "RS8": "<@&805597260455870515>",
+            "RS9": "<@&805596918956556308>",
+            "RS10": "<@&805597317856100353>",
+            "RS11": "<@&805598218666770432>"
+        }
+    },
+    'testing': {
+        'rs_ping': {
+            "RS5": "<@&806018027383422998>",
+            "RS6": "<@&806018102797402122>",
+            "RS7": "<@&806018133835513876>",
+            "RS8": "<@&806018135106519040>",
+            "RS9": "<@&806018147487711313>",
+            "RS10": "<@&806018150256082984>",
+            "RS11": "<@&806261078295183400>"
+        },
+        'rs_ping_1more': {
+            "RS5": "<@&806018333517938688>",
+            "RS6": "<@&806018337804910592>",
+            "RS7": "<@&806018340203397140>",
+            "RS8": "<@&806018343696990208>",
+            "RS9": "<@&806018346269016084>",
+            "RS10": "<@&806018349183139890>",
+            "RS11": "<@&806261118158372936>"
+        }
+    },
+}
+
+if TESTING:
+    LOGGER.debug('Loading testing settings.')
+    RS_GROUPS = RS_GROUPS.get('testing')
+else:
+    LOGGER.info('Loading PRODUCTION settings.')
+    RS_GROUPS = RS_GROUPS.get('prod')
+
+
+class RSQueue(Cog, name='Queue'):
 
     def __init__(self, bot):
         self.bot = bot
         self.index = 0
         self.check_people.start()
-        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "dart", "laser", "battery", "solo", "solo2"]
+        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage"]
         self.rs_channel = {
-            "rs5-club" : 5, 
-            "rs6-club" : 6,
-            "rs7-club" : 7,
-            "rs8-club" : 8,
-            "rs9-club" : 9,
-            "rs10-club" : 10,
-            "rs11-club" : 11,
+            "rs5-club": 5,
+            "rs6-club": 6,
+            "rs7-club": 7,
+            "rs8-club": 8,
+            "rs9-club": 9,
+            "rs10-club": 10,
+            "rs11-club": 11,
         }
-        # This is the actual RS Role IDs for the clubs
-        self.rs_ping = {
-            "RS5" : "<@&785786197531295755>", 
-            "RS6" : "<@&785786579826245642>",
-            "RS7" : "<@&785786709517795328>",
-            "RS8" : "<@&785786792350711808>",
-            "RS9" : "<@&785786898920374273>",
-            "RS10" : "<@&785786957782319104>",
-            "RS11" : "<@&800957912180457494>"
-        }
-        self.rs_ping_1more = {
-            "RS5" : "<@&800958080208732231>",
-            "RS6" : "<@&805597027458744321>",
-            "RS7" : "<@&805597168849256489>",
-            "RS8" : "<@&805597260455870515>",
-            "RS9" : "<@&805596918956556308>",
-            "RS10" : "<@&805597317856100353>",
-            "RS11" : "<@&805598218666770432>"
-        }
-        # These are the testing pings on the temp server
-        #self.rs_ping = {
-        #    "RS5" : "<@&806018027383422998>", 
-        #    "RS6" : "<@&806018102797402122>",
-        #    "RS7" : "<@&806018133835513876>",
-        #    "RS8" : "<@&806018135106519040>",
-        #    "RS9" : "<@&806018147487711313>",
-        #    "RS10" : "<@&806018150256082984>",
-        #    "RS11" : "<@&806261078295183400>"
-        #}
-        #self.rs_ping_1more = {
-        #    "RS5" : "<@&806018333517938688>",
-        #    "RS6" : "<@&806018337804910592>",
-        #    "RS7" : "<@&806018340203397140>",
-        #    "RS8" : "<@&806018343696990208>",
-        #    "RS9" : "<@&806018346269016084>",
-        #    "RS10" : "<@&806018349183139890>",
-        #    "RS11" : "<@&806261118158372936>"
-        #}
+        self.rs_ping = RS_GROUPS['rs_ping']
+        self.rs_ping_1more = RS_GROUPS['rs_ping_1more']
         self.emojis = {
-            "1️⃣" : 1,
-            "2️⃣" : 2,
-            "3️⃣" : 3,
-            "4️⃣" : 4
+            "1️⃣": 1,
+            "2️⃣": 2,
+            "3️⃣": 3,
+            "4️⃣": 4
         }
-
-    
 
     # This executes an sql command to a database
     def sql_command(self, sql, val, data='rsqueue.sqlite'):
@@ -103,7 +113,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
     # This returns how many minutes a person has been in a queue
     def time(self, user_id, level):
-        print(f"Running the time command. User ID: {user_id}, level: {level}")
+        LOGGER.debug(f"Running the time command. User ID: {user_id}, level: {level}")
         db = sqlite3.connect("rsqueue.sqlite")
         cursor = db.cursor()
         sql = "SELECT time FROM main WHERE user_id=? AND level=?"
@@ -113,10 +123,9 @@ class RSQueue(commands.Cog, name='Queue'):
         db.commit()
         cursor.close()
         db.close()
-        print("Results from the database: ", person)
+        LOGGER.debug("Results from the database: ", person)
         for p in person:
-            return int((time.time() - int(p))/60)
-
+            return int((time.time() - int(p)) / 60)
 
     def cog_unload(self):
         self.check_people.cancel()
@@ -129,53 +138,56 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.execute("SELECT time, length, user_id, level, channel_id FROM main")
         times = cursor.fetchall()
         for queue_time in times:
-            #print(queue_time)
-            #print(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
-            minutes = int((time.time()-queue_time[0])/60)
-            if(minutes == queue_time[1]):
+            # LOGGER.debug(queue_time)
+            # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
+            minutes = int((time.time() - queue_time[0]) / 60)
+            if (minutes == queue_time[1]):
                 # Ping the user
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
-                message = await channel.send(f"{user.mention}, still in for a RS{queue_time[3]}? React ✅ to stay in the queue, and ❌ to leave the queue")
+                message = await channel.send(
+                    f"{user.mention}, still in for a RS{queue_time[3]}? React ✅ to stay in the queue, and ❌ to leave the queue")
                 await message.add_reaction('✅')
                 await message.add_reaction('❌')
                 # Add their user_id and message_id to database
                 sql = "INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)"
                 val = (user.id, message.id, queue_time[3])
                 cursor.execute(sql, val)
-            elif(minutes == queue_time[1]+5):
+                pass
+            elif (minutes == queue_time[1] + 5):
                 self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
                 await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
-                id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                print(queue_time[4], id[0][0])
+                id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?",
+                                      (queue_time[2], queue_time[3]))
+                LOGGER.debug(queue_time[4], id[0][0])
                 message = await channel.fetch_message(id[0][0])
                 await message.delete()
                 self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                pass
         db.commit()
         cursor.close()
         db.close()
 
     @commands.command(aliases=["r", "^", "staying", "re", "stayin", "YOUGOTILISTARED"])
     async def refresh(self, ctx):
-        self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
-        await ctx.send(f"{ctx.author.mention}, you are requed for a RS{self.rs_channel[str(ctx.message.channel)]}! ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
-
+        self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?",
+                         (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
+        await ctx.send(
+            f"{ctx.author.mention}, you are requed for a RS{self.rs_channel[str(ctx.message.channel)]}! ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
 
     @commands.command(pass_context=True)
     async def corp(self, ctx, corp):
         member = await ctx.guild.fetch_member(ctx.author.id)
-        print(member.display_name)
-        if(member.display_name.startswith("[")):
-            name = member.display_name[member.display_name.find("]")+2:]
+        LOGGER.debug(member.display_name)
+        if member.display_name.startswith("["):
+            name = member.display_name[member.display_name.find("]") + 2:]
         else:
             name = member.display_name
         nick = f"[{corp}] " + name
         await member.edit(nick=nick)
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
-
-
 
     @commands.command()
     async def rsc(self, ctx):
@@ -201,7 +213,7 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command()
     @commands.has_role("mod")
     async def clear_database(self, ctx, level=None):
-        if(level is not None):
+        if level is not None:
             self.sql_command("DELETE FROM main WHERE level=?", [(level)])
             await ctx.send(f"The RS{level} queue has been cleared")
         else:
@@ -220,14 +232,14 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command(name='2', help="Type +2/-2, which will add you/remove you and another person to/from a RS Queue")
     async def _two(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
-    
+
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
     async def _three(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
 
     async def everything(self, ctx, prefix, count, length, channel_id):
-        print(f"Running the everything command")
-        print(f"Values: Prefix: {prefix}, Count: {count}, length: {length}, channel_id: {channel_id}")
+        LOGGER.debug(f"Running the everything command")
+        LOGGER.debug(f"Values: Prefix: {prefix}, Count: {count}, length: {length}, channel_id: {channel_id}")
         count = int(count)
         if prefix == "+":
             right_channel = False
@@ -259,18 +271,18 @@ class RSQueue(commands.Cog, name='Queue'):
                     else:                
                         # check if they are in any other queues
                         database_check = self.sql_command("SELECT user_id FROM main WHERE user_id=?", [(ctx.author.id)])
-                        print(database_check)
+                        LOGGER.debug(database_check)
                         if(len(database_check) == 0): # They weren't found in the database, add them
-                            print("Adding them to the queue")
+                            LOGGER.debug("Adding them to the queue")
                             self.sql_command("INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)", (ctx.author.id, count, self.rs_channel[channel], int(time.time()), length, channel_id))
                             # Check if queue is 4/4
                             if(self.amount(self.rs_channel[channel]) == 4):
-                                print("Queue is 4/4, remove everyone")
+                                LOGGER.debug("Queue is 4/4, remove everyone")
                                 # Print out the queue
                                 people = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                                 string_people = ""
                                 print_people = []
-                                print(people)
+                                LOGGER.debug(people)
                                 for person in people:
                                     string_people += (await self.bot.fetch_user(person[0])).mention + " "
                                     print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
@@ -282,18 +294,18 @@ class RSQueue(commands.Cog, name='Queue'):
                                 # Remove everyone from the queue
                                 self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                             else:
-                                print("Queue ain't 4/4, print out el queue")
+                                LOGGER.debug("Queue ain't 4/4, print out el queue")
                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                 if(self.amount(self.rs_channel[channel]) == 3):
                                     await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                 else:
                                     await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                         else:
-                            print("They were found on multiple queues, find all queues")
+                            LOGGER.debug("They were found on multiple queues, find all queues")
                             # see what queue they are on, and either update their current position or new position
                             current_queues = self.sql_command("SELECT level, amount FROM main WHERE user_id=?", [(ctx.author.id)])
                             current_queues.append((self.rs_channel[str(ctx.message.channel)],count))
-                            print(current_queues)
+                            LOGGER.debug(current_queues)
                             D = {}
                             for (x, y) in current_queues:
                                 if x not in D.keys():
@@ -301,8 +313,8 @@ class RSQueue(commands.Cog, name='Queue'):
                                 else:
                                     D[x] += y
                             final_queues = [(x, D[x]) for x in D.keys()]
-                            print(final_queues)
-                            print("Above is what should be the final queue status")
+                            LOGGER.debug(final_queues)
+                            LOGGER.debug("Above is what should be the final queue status")
                             # append the queue they wanna join to
                             for queue in final_queues:
                                 if(queue[0] == self.rs_channel[channel]):
@@ -345,9 +357,9 @@ class RSQueue(commands.Cog, name='Queue'):
                 await ctx.message.delete()
                 await msg.delete
         elif prefix == "-":
-            print("- command run, attempting to remove them from queue")
+            LOGGER.debug("- command run, attempting to remove them from queue")
             result = self.sql_command("SELECT amount FROM main WHERE user_id=? AND level=?", (ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
-            print(result)
+            LOGGER.debug(result)
             if(len(result) == 0): # Didn't find them in any queues
                 await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues at the moment")
             else: # Remove count of them from the queue 
@@ -364,18 +376,18 @@ class RSQueue(commands.Cog, name='Queue'):
                     else:
                         D[x] += y
                 final_queues = [(x, D[x]) for x in D.keys()]
-                print(final_queues)
-                print("above is the final queues of that person")
+                LOGGER.debug(final_queues)
+                LOGGER.debug("above is the final queues of that person")
                 for queue in final_queues:
                     # Remove only count from the queue they sent the message in
                     if (queue[0] == self.rs_channel[str(ctx.message.channel)]):
-                        print(queue)
+                        LOGGER.debug(queue)
                         if(queue[1] <= 0):
                             self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(queue[0])))
-                            print("Removed them from the queue")
+                            LOGGER.debug("Removed them from the queue")
                         else:
                             self.sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?", (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
-                            print("updated the queue they were in")
+                            LOGGER.debug("updated the queue they were in")
                 people = self.sql_command("SELECT amount FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                 count = 0
                 counting = []
@@ -384,7 +396,6 @@ class RSQueue(commands.Cog, name='Queue'):
                     count += int(person[0])
                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
                 await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
-        
 
     @commands.command(aliases=["o"], help="type !o or !out, which leaves your current RS Queue")
     async def out(self, ctx):
@@ -410,13 +421,13 @@ class RSQueue(commands.Cog, name='Queue'):
             for queue in final_queues:
                 # Remove only count from the queue they sent the message in
                 if (queue[0] == self.rs_channel[str(ctx.message.channel)]):
-                    print(queue)
+                    LOGGER.debug(queue)
                     if(queue[1] <= 0):
                         self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(queue[0])))
-                        print("Removed them from the queue")
+                        LOGGER.debug("Removed them from the queue")
                     else:
                         self.sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?", (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
-                        print("updated the queue they were in")
+                        LOGGER.debug("updated the queue they were in")
             # Print out the new queue
             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
             await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
@@ -507,7 +518,7 @@ class RSQueue(commands.Cog, name='Queue'):
                             valid = False
                     if(valid):
                         current_queues.append((self.rs_channel[str(ctx.message.channel)],1))
-                        print(current_queues)
+                        LOGGER.debug(current_queues)
                         D = {}
                         for (x, y) in current_queues:
                             if x not in D.keys():
@@ -515,7 +526,7 @@ class RSQueue(commands.Cog, name='Queue'):
                             else:
                                 D[x] += y
                         final_queues = [(x, D[x]) for x in D.keys()]
-                        print(final_queues)
+                        LOGGER.debug(final_queues)
                         # append the queue they wanna join to the 
                         for queue in final_queues:
                             if(queue[0] == self.rs_channel[channel]):
@@ -560,7 +571,6 @@ class RSQueue(commands.Cog, name='Queue'):
     async def queue(self, ctx):
         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
 
-
     async def print_queue(self, ctx, level, display=True):
         extras = {
             'croid' : discord.utils.get(self.bot.emojis, name='croid'),
@@ -604,7 +614,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 result = self.sql_command("SELECT * FROM data WHERE user_id=?", [((await ctx.guild.fetch_member(people[0])).id)])
                 stuff = cursor.execute('select * from data')
                 names = [description[0] for description in stuff.description]
-                print(names)
+                LOGGER.debug(names)
                 names = names[1:]
                 temp = ""
                 if(len(result) != 0):
@@ -630,8 +640,6 @@ class RSQueue(commands.Cog, name='Queue'):
         db.close()
 
 
-
-
 def setup(bot):
     bot.add_cog(RSQueue(bot))
-    print('RS Queueing loaded')
+    LOGGER.debug('RS Queueing loaded')
