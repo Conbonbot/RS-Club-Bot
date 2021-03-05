@@ -107,8 +107,8 @@ class RSRole(commands.Cog, name='Role'):
             'solo': discord.utils.get(self.bot.emojis, name='solo'),
             'solo2': discord.utils.get(self.bot.emojis, name='solo2')
         }
-        # print(self.extras)
-        print(str(extras['croid']))
+        # LOGGER.debug(self.extras)
+        LOGGER.debug(str(extras['croid']))
         # await ctx.send(str(croid) + str(influence) + str(nosanc) + str(notele) + str(rse) + str(suppress) + str(unity) + str(veng) + str(barrage))
         extra_embed = discord.Embed(
             color=discord.Color.blue(),
