@@ -5,6 +5,9 @@ services:
       context: .
     volumes:
       - ./:/root/rs-club-bot
+    environment:
+      - PYTHONPATH=/root/rs-club-bot
     env_file:
-      - secrets.env
+      - environment.env
+    working_dir: /root/rs-club-bot
     command: ["python", "/root/rs-club-bot/bot.py"]
