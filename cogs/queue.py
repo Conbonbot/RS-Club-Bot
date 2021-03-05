@@ -382,7 +382,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 for person in people:
                     counting.append(person[0])
                     count += int(person[0])
-                await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
+                await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
                 await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
         
 
@@ -489,6 +489,11 @@ class RSQueue(commands.Cog, name='Queue'):
                         cursor.execute(sql, [(add_level)])
                     else:
                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
+                        count = self.amount(self.rs_channel[channel])
+                        if(count == 3):
+                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                        else:
+                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     db.commit()
                     cursor.close()
                     db.close()
@@ -541,6 +546,11 @@ class RSQueue(commands.Cog, name='Queue'):
                                         self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])                                    
                                     else:
                                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
+                                        count = self.amount(self.rs_channel[channel])
+                                        if(count == 3):
+                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                        else:
+                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     else:
                         await ctx.send(f"{ctx.author.mention}, you are already queued for a RS{self.rs_channel[channel]}, if you want to add another player to the queue, type +1")
             else:
