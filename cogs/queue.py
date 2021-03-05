@@ -426,7 +426,6 @@ class RSQueue(commands.Cog, name='Queue'):
         cursor.close()
         db.close()
 
-    # Test
     @commands.command(aliases=["in", "i"], help="Use this command (!i or !in) to join a RS Queue")
     async def rs(self, ctx, length=60):
         right_channel = False
@@ -611,7 +610,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     emoji_count += 1
                 str_people += " " + list_people[i] + rsmods[i] +  " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                 str_people += "\n"
-            queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)", value=str_people, inline=False)
+            queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)", value=str_people, inline=False)
             message = await ctx.send(embed=queue_embed)
         else:
             if display:
