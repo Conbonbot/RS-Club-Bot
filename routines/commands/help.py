@@ -14,12 +14,8 @@ class Help(CommandRoutine):
                 description='RS Roles + Pings',
                 color=discord.Color.green()
             )
-            if TESTING:
-                rs_role_channel = await self.bot.fetch_channel(806269015344414762)
-            else:
-                rs_role_channel = await self.bot.fetch_channel(817000327022247936)
             # TODO: temporary for now
-            rs_role_channel = await self.bot.fetch_channel(817000327022247936)
+            rs_role_channel = await self.bot.fetch_channel(801610229040939038)
             role_embed.add_field(name=f"RS Roles", value=f"To start queuing, head over to {rs_role_channel.mention} and select how you'd like to be pinged. There are 3 different options you can select (this is done by reacting to the one of the numbers below each message).", inline=False)
             role_embed.add_field(name=f"Pings (Option 1, #/4)", value=f"React to the [first message](https://discord.com/channels/682479756104564775/801610229040939038/808782626612838420) to get pinged EVERYTIME someone joins a queue.")
             role_embed.add_field(name=f"Pings (Option 2, 3/4)", value=f"React to the [second message](https://discord.com/channels/682479756104564775/801610229040939038/808782649946669127) to get pinged ONLY when a queue is 3/4.")
