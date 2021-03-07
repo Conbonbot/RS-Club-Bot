@@ -10,26 +10,7 @@ from bot import TESTING
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
 
 
-# TODO: migrate to a helper lib that can be used across the entire project.
-def sql_command(sql, val, data='rsqueue.sqlite'):
-    db = sqlite3.connect(data)
-    cursor = db.cursor()
-    cursor.execute(sql, val)
-    results = cursor.fetchall()
-    db.commit()
-    cursor.close()
-    db.close()
-    return results
 
-
-def amount(level):
-    people = sql_command("SELECT amount FROM main WHERE level=?", [level])
-    count = 0
-    counting = []
-    for person in people:
-        counting.append(person[0])
-        count += int(person[0])
-    return count
 
 
 class RSRole(commands.Cog, name='Role'):
@@ -46,6 +27,27 @@ class RSRole(commands.Cog, name='Role'):
             '⏸️': 11,
             '❌': -1,
         }
+
+
+    def sql_command(self, sql, val, data='rsqueue.sqlite'):
+        db = sqlite3.connect(data)
+        cursor = db.cursor()
+        cursor.execute(sql, val)
+        results = cursor.fetchall()
+        db.commit()
+        cursor.close()
+        db.close()
+        return results
+
+
+    def amount(self, level):
+        people = self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
+        count = 0
+        counting = []
+        for person in people:
+            counting.append(person[0])
+            count += int(person[0])
+        return count
 
     @commands.command()
     async def role(self, ctx):
@@ -115,29 +117,19 @@ class RSRole(commands.Cog, name='Role'):
             description="Current Mods"
         )
         extra_embed.add_field(name=str(extras['croid']), value=f"Croid: Would like help getting croid.", inline=False)
-        extra_embed.add_field(name=str(extras['influence']), value=f"Influence: would like a full system clear.",
-                              inline=False)
+        extra_embed.add_field(name=str(extras['influence']), value=f"Influence: would like a full system clear.",inline=False)
         extra_embed.add_field(name=str(extras['nosanc']), value=f"Nosanc: No Sanctuary on Battleships.", inline=False)
         extra_embed.add_field(name=str(extras['rse']), value=f"RSE: Will provide RSE.", inline=False)
-        extra_embed.add_field(name=str(extras['veng']), value=f"Veng: Vengeance present on Battleship(s).",
-                              inline=False)
-        extra_embed.add_field(name=str(extras['notele']),
-                              value=f"Notele: No Teleport on either Battleship or Transport.", inline=False)
-        extra_embed.add_field(name=str(extras['barrage']),
-                              value=f"Barrage: Barrage, best left alone, and if you help only take out capital ships.",
-                              inline=False)
-        extra_embed.add_field(name=str(extras['suppress']), value=f"Suppress: Suppress present on Battleship(s).",
-                              inline=False)
+        extra_embed.add_field(name=str(extras['veng']), value=f"Veng: Vengeance present on Battleship(s).",inline=False)
+        extra_embed.add_field(name=str(extras['notele']),value=f"Notele: No Teleport on either Battleship or Transport.", inline=False)
+        extra_embed.add_field(name=str(extras['barrage']),value=f"Barrage: Barrage, best left alone, and if you help only take out capital ships.",inline=False)
+        extra_embed.add_field(name=str(extras['suppress']), value=f"Suppress: Suppress present on Battleship(s).",inline=False)
         extra_embed.add_field(name=str(extras['unity']), value=f"Unity: Unity present on Battleship(s).", inline=False)
         extra_embed.add_field(name=str(extras['laser']), value=f"Laser: Laser present on Battleship(s).", inline=False)
-        extra_embed.add_field(name=str(extras['battery']), value=f"Battery: Battery present on Battleship(s).",
-                              inline=False)
-        extra_embed.add_field(name=str(extras['dart']), value=f"Dart: Dart launcher present on Battleship(s).",
-                              inline=False)
-        extra_embed.add_field(name=str(extras['solo']),
-                              value=f"solo: Can solo one planet without any help from others.", inline=False)
-        extra_embed.add_field(name=str(extras['solo2']), value=f"solo2: Can solo two planets without any help.",
-                              inline=False)
+        extra_embed.add_field(name=str(extras['battery']), value=f"Battery: Battery present on Battleship(s).",inline=False)
+        extra_embed.add_field(name=str(extras['dart']), value=f"Dart: Dart launcher present on Battleship(s).",inline=False)
+        extra_embed.add_field(name=str(extras['solo']),value=f"solo: Can solo one planet without any help from others.", inline=False)
+        extra_embed.add_field(name=str(extras['solo2']), value=f"solo2: Can solo two planets without any help.",inline=False)
 
         await ctx.send(embed=extra_embed)
         await ctx.send(
@@ -158,11 +150,11 @@ class RSRole(commands.Cog, name='Role'):
         mod = mod.lower()
         if mod in current_mods:
             # Check to see if they already are in the data table
-            results = sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
+            results = self.sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
             if len(results) == 0:
-                sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+                self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
             else:
-                sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
+                self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
             await ctx.send(
                 f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:
@@ -183,7 +175,7 @@ class RSRole(commands.Cog, name='Role'):
         db.close()
         mod = mod.lower()
         if mod in current_mods:
-            sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
+            self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
             await ctx.send(
                 f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:
