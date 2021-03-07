@@ -1,16 +1,35 @@
 import sqlite3
-from discord.ext import commands, tasks
-import discord
-import asyncio
-import time
 
-from bot import DEBUG
+import discord
+from discord.ext import commands
+
 from bot import LOGGER
 from bot import TESTING
-from routines.cogs import Cog
 
 # TODO: Use an actual settings file.
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
+
+
+# TODO: migrate to a helper lib that can be used across the entire project.
+def sql_command(sql, val, data='rsqueue.sqlite'):
+    db = sqlite3.connect(data)
+    cursor = db.cursor()
+    cursor.execute(sql, val)
+    results = cursor.fetchall()
+    db.commit()
+    cursor.close()
+    db.close()
+    return results
+
+
+def amount(level):
+    people = sql_command("SELECT amount FROM main WHERE level=?", [level])
+    count = 0
+    counting = []
+    for person in people:
+        counting.append(person[0])
+        count += int(person[0])
+    return count
 
 
 class RSRole(commands.Cog, name='Role'):
@@ -27,25 +46,6 @@ class RSRole(commands.Cog, name='Role'):
             '⏸️': 11,
             '❌': -1,
         }
-
-    def sql_command(self, sql, val, data='rsqueue.sqlite'):
-        db = sqlite3.connect(data)
-        cursor = db.cursor()
-        cursor.execute(sql, val)
-        results = cursor.fetchall()
-        db.commit()
-        cursor.close()
-        db.close()
-        return results
-
-    def amount(self, level):
-        people = self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
-        count = 0
-        counting = []
-        for person in people:
-            counting.append(person[0])
-            count += int(person[0])
-        return count
 
     @commands.command()
     async def role(self, ctx):
@@ -112,7 +112,7 @@ class RSRole(commands.Cog, name='Role'):
         # await ctx.send(str(croid) + str(influence) + str(nosanc) + str(notele) + str(rse) + str(suppress) + str(unity) + str(veng) + str(barrage))
         extra_embed = discord.Embed(
             color=discord.Color.blue(),
-            description=("Current Mods")
+            description="Current Mods"
         )
         extra_embed.add_field(name=str(extras['croid']), value=f"Croid: Would like help getting croid.", inline=False)
         extra_embed.add_field(name=str(extras['influence']), value=f"Influence: would like a full system clear.",
@@ -147,22 +147,6 @@ class RSRole(commands.Cog, name='Role'):
 
     @rsmod.group()
     async def on(self, ctx, mod):
-        extras = {
-            'croid': discord.utils.get(self.bot.emojis, name='croid'),
-            'influence': discord.utils.get(self.bot.emojis, name='influence'),
-            'nosanc': discord.utils.get(self.bot.emojis, name='nosanc'),
-            'notele': discord.utils.get(self.bot.emojis, name='notele'),
-            'rse': discord.utils.get(self.bot.emojis, name='rse'),
-            'suppress': discord.utils.get(self.bot.emojis, name='suppress'),
-            'unity': discord.utils.get(self.bot.emojis, name='unity'),
-            'veng': discord.utils.get(self.bot.emojis, name='veng'),
-            'barrage': discord.utils.get(self.bot.emojis, name='barrage'),
-            'laser': discord.utils.get(self.bot.emojis, name='laser'),
-            'dart': discord.utils.get(self.bot.emojis, name='dart'),
-            'battery': discord.utils.get(self.bot.emojis, name='battery'),
-            'solo': discord.utils.get(self.bot.emojis, name='solo'),
-            'solo2': discord.utils.get(self.bot.emojis, name='solo2')
-        }
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
         stuff = cursor.execute('select * from data')
@@ -174,11 +158,11 @@ class RSRole(commands.Cog, name='Role'):
         mod = mod.lower()
         if mod in current_mods:
             # Check to see if they already are in the data table
-            results = self.sql_command("SELECT user_id FROM data WHERE user_id=?", [(ctx.author.id)])
+            results = sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
             if len(results) == 0:
-                self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+                sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
             else:
-                self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
+                sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
             await ctx.send(
                 f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:
@@ -189,22 +173,6 @@ class RSRole(commands.Cog, name='Role'):
 
     @rsmod.group()
     async def off(self, ctx, mod):
-        extras = {
-            'croid': discord.utils.get(self.bot.emojis, name='croid'),
-            'influence': discord.utils.get(self.bot.emojis, name='influence'),
-            'nosanc': discord.utils.get(self.bot.emojis, name='nosanc'),
-            'notele': discord.utils.get(self.bot.emojis, name='notele'),
-            'rse': discord.utils.get(self.bot.emojis, name='rse'),
-            'suppress': discord.utils.get(self.bot.emojis, name='suppress'),
-            'unity': discord.utils.get(self.bot.emojis, name='unity'),
-            'veng': discord.utils.get(self.bot.emojis, name='veng'),
-            'barrage': discord.utils.get(self.bot.emojis, name='barrage'),
-            'laser': discord.utils.get(self.bot.emojis, name='laser'),
-            'dart': discord.utils.get(self.bot.emojis, name='dart'),
-            'battery': discord.utils.get(self.bot.emojis, name='battery'),
-            'solo': discord.utils.get(self.bot.emojis, name='solo'),
-            'solo2': discord.utils.get(self.bot.emojis, name='solo2')
-        }
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
         stuff = cursor.execute('select * from data')
@@ -215,7 +183,7 @@ class RSRole(commands.Cog, name='Role'):
         db.close()
         mod = mod.lower()
         if mod in current_mods:
-            self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
+            sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
             await ctx.send(
                 f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
         else:

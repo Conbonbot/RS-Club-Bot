@@ -10,9 +10,6 @@ from discord.ext import commands, tasks
 from bot import LOGGER
 from bot import TESTING
 
-from routines.cogs import Cog
-
-
 # TODO: Use an actual settings file for these and channel/message ids.
 RS_GROUPS = {
     'prod': {
@@ -65,7 +62,48 @@ else:
     RS_GROUPS = RS_GROUPS.get('prod')
 
 
-class RSQueue(Cog, name='Queue'):
+# TODO: migrate to a helper lib that can be used across the entire project.
+def sql_command(sql, val, data='rsqueue.sqlite'):
+    """Runs a sqlite3 database command."""
+    with sqlite3.connect(data) as db:
+        cursor = db.cursor()
+        cursor.execute(sql, val)
+        results = cursor.fetchall()
+        db.commit()
+        cursor.close()
+        db.close()
+    return results
+
+
+def amount(level):
+    """Returns the number of players in an RS queue."""
+    people = sql_command("SELECT amount FROM main WHERE level=?", [level])
+    count = 0
+    counting = []
+    for person in people:
+        counting.append(person[0])
+        count += int(person[0])
+    return count
+
+
+def queue_time(user_id, level):
+    """Returns the total queued time for a player."""
+    LOGGER.debug(f"Running the time command. User ID: {user_id}, level: {level}")
+    db = sqlite3.connect("rsqueue.sqlite")
+    cursor = db.cursor()
+    sql = "SELECT time FROM main WHERE user_id=? AND level=?"
+    val = (user_id, level)
+    cursor.execute(sql, val)
+    person = cursor.fetchone()
+    db.commit()
+    cursor.close()
+    db.close()
+    LOGGER.debug("Results from the database: ", person)
+    for p in person:
+        return int((time.time() - int(p)) / 60)
+
+
+class RSQueue(commands.Cog, name='Queue'):
 
     def __init__(self, bot):
         self.bot = bot
@@ -90,43 +128,6 @@ class RSQueue(Cog, name='Queue'):
             "4️⃣": 4
         }
 
-    # This executes an sql command to a database
-    def sql_command(self, sql, val, data='rsqueue.sqlite'):
-        db = sqlite3.connect(data)
-        cursor = db.cursor()
-        cursor.execute(sql, val)
-        results = cursor.fetchall()
-        db.commit()
-        cursor.close()
-        db.close()
-        return results
-
-    # This returns how many people are in a current RS queue
-    def amount(self, level):
-        people = self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
-        count = 0
-        counting = []
-        for person in people:
-            counting.append(person[0])
-            count += int(person[0])
-        return count
-
-    # This returns how many minutes a person has been in a queue
-    def time(self, user_id, level):
-        LOGGER.debug(f"Running the time command. User ID: {user_id}, level: {level}")
-        db = sqlite3.connect("rsqueue.sqlite")
-        cursor = db.cursor()
-        sql = "SELECT time FROM main WHERE user_id=? AND level=?"
-        val = (user_id, level)
-        cursor.execute(sql, val)
-        person = cursor.fetchone()
-        db.commit()
-        cursor.close()
-        db.close()
-        LOGGER.debug("Results from the database: ", person)
-        for p in person:
-            return int((time.time() - int(p)) / 60)
-
     def cog_unload(self):
         self.check_people.cancel()
 
@@ -141,7 +142,7 @@ class RSQueue(Cog, name='Queue'):
             # LOGGER.debug(queue_time)
             # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
             minutes = int((time.time() - queue_time[0]) / 60)
-            if (minutes == queue_time[1]):
+            if minutes == queue_time[1]:
                 # Ping the user
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
@@ -154,17 +155,18 @@ class RSQueue(Cog, name='Queue'):
                 val = (user.id, message.id, queue_time[3])
                 cursor.execute(sql, val)
                 pass
-            elif (minutes == queue_time[1] + 5):
-                self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+            elif minutes == queue_time[1] + 5:
+                sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
-                await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
-                id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?",
-                                      (queue_time[2], queue_time[3]))
-                LOGGER.debug(queue_time[4], id[0][0])
-                message = await channel.fetch_message(id[0][0])
+                await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({amount(queue_time[3])}/4)")
+                idx = sql_command(
+                    "SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3])
+                )
+                LOGGER.debug(queue_time[4], idx[0][0])
+                message = await channel.fetch_message(idx[0][0])
                 await message.delete()
-                self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 pass
         db.commit()
         cursor.close()
@@ -172,10 +174,13 @@ class RSQueue(Cog, name='Queue'):
 
     @commands.command(aliases=["r", "^", "staying", "re", "stayin", "YOUGOTILISTARED"])
     async def refresh(self, ctx):
-        self.sql_command("UPDATE main SET time=? WHERE user_id=? AND level=?",
-                         (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
-        await ctx.send(
-            f"{ctx.author.mention}, you are requed for a RS{self.rs_channel[str(ctx.message.channel)]}! ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
+        sql_command(
+            "UPDATE main SET time=? WHERE user_id=? AND level=?",
+            (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)])
+        )
+        rs_level = f'RS{self.rs_channel[str(ctx.message.channel)]}'
+        num_players = f'({amount(self.rs_channel[str(ctx.message.channel)])}/4)'
+        await ctx.send(f"{ctx.author.mention}, you are requed for a {rs_level}! {num_players}")
 
     @commands.command(pass_context=True)
     async def corp(self, ctx, corp):
@@ -214,7 +219,7 @@ class RSQueue(Cog, name='Queue'):
     @commands.has_role("mod")
     async def clear_database(self, ctx, level=None):
         if level is not None:
-            self.sql_command("DELETE FROM main WHERE level=?", [(level)])
+            sql_command("DELETE FROM main WHERE level=?", [level])
             await ctx.send(f"The RS{level} queue has been cleared")
         else:
             db = sqlite3.connect('rsqueue.sqlite')
@@ -245,41 +250,45 @@ class RSQueue(Cog, name='Queue'):
             right_channel = False
             channel = ""
             for club_channel in self.rs_channel:
-                if(club_channel == str(ctx.message.channel)):
+                if club_channel == str(ctx.message.channel):
                     right_channel = True
                     channel = club_channel
-            if(right_channel):
+            if right_channel:
                 has_right_role = False
                 for role in ctx.author.roles:
-                    if(str(role)[2:].isnumeric()): # Checks main role (rs#)
-                        if(int(str(role)[2:]) >= int(self.rs_channel[channel])):
+                    if str(role)[2:].isnumeric():  # Checks main role (rs#)
+                        if int(str(role)[2:]) >= int(self.rs_channel[channel]):
                             has_right_role = True
                             break
-                    elif(str(role)[2:-12].isnumeric()): # Checks 3/4 role (rs# 3/4 1more)
-                        if(int(str(role)[2:-12]) >= int(self.rs_channel[channel])):
+                    elif str(role)[2:-12].isnumeric():  # Checks 3/4 role (rs# 3/4 1more)
+                        if int(str(role)[2:-12]) >= int(self.rs_channel[channel]):
                             has_right_role = True
                             break
-                    elif(str(role)[2:-2].isnumeric()): # Checks silent role (rs# s)
-                        if(int(str(role)[2:-2]) >= int(self.rs_channel[channel])):
+                    elif str(role)[2:-2].isnumeric():  # Checks silent role (rs# s)
+                        if int(str(role)[2:-2]) >= int(self.rs_channel[channel]):
                             has_right_role = True
                             break
-                if(has_right_role):
+                if has_right_role:
                     # check if adding amount would overfill the queue
-                    queue_status = self.amount(self.rs_channel[channel])
-                    if(int(queue_status) + count > 4):
-                        await ctx.send(f"{ctx.author.mention}, adding {count} people to the queue would overfill the queue")
-                    else:                
+                    queue_status = amount(self.rs_channel[channel])
+                    if int(queue_status) + count > 4:
+                        await ctx.send(
+                            f"{ctx.author.mention}, adding {count} people to the queue would overfill the queue")
+                    else:
                         # check if they are in any other queues
-                        database_check = self.sql_command("SELECT user_id FROM main WHERE user_id=?", [(ctx.author.id)])
+                        database_check = sql_command("SELECT user_id FROM main WHERE user_id=?", [ctx.author.id])
                         LOGGER.debug(database_check)
-                        if(len(database_check) == 0): # They weren't found in the database, add them
+                        if len(database_check) == 0:  # They weren't found in the database, add them
                             LOGGER.debug("Adding them to the queue")
-                            self.sql_command("INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)", (ctx.author.id, count, self.rs_channel[channel], int(time.time()), length, channel_id))
+                            sql_command(
+                                "INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)",
+                                (ctx.author.id, count, self.rs_channel[channel], int(time.time()), length, channel_id))
                             # Check if queue is 4/4
-                            if(self.amount(self.rs_channel[channel]) == 4):
+                            if amount(self.rs_channel[channel]) == 4:
                                 LOGGER.debug("Queue is 4/4, remove everyone")
                                 # Print out the queue
-                                people = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                people = sql_command("SELECT user_id FROM main WHERE level=?",
+                                                     [(self.rs_channel[str(ctx.message.channel)])])
                                 string_people = ""
                                 print_people = []
                                 LOGGER.debug(people)
@@ -290,65 +299,84 @@ class RSQueue(Cog, name='Queue'):
                                 await ctx.send("Meet where?")
                                 rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                 formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
+                                await rs_log_channel.send(
+                                    f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                 # Remove everyone from the queue
-                                self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                sql_command("DELETE FROM main WHERE level=?",
+                                            [(self.rs_channel[str(ctx.message.channel)])])
                             else:
                                 LOGGER.debug("Queue ain't 4/4, print out el queue")
                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                                if(self.amount(self.rs_channel[channel]) == 3):
-                                    await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                if amount(self.rs_channel[channel]) == 3:
+                                    await ctx.send(
+                                        f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                 else:
-                                    await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                    await ctx.send(
+                                        f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                         else:
                             LOGGER.debug("They were found on multiple queues, find all queues")
                             # see what queue they are on, and either update their current position or new position
-                            current_queues = self.sql_command("SELECT level, amount FROM main WHERE user_id=?", [(ctx.author.id)])
-                            current_queues.append((self.rs_channel[str(ctx.message.channel)],count))
-                            LOGGER.debug(current_queues)
-                            D = {}
+                            current_queues = sql_command("SELECT level, amount FROM main WHERE user_id=?", [ctx.author.id])
+                            current_queues.append((self.rs_channel[str(ctx.message.channel)], count))
+                            LOGGER.debug(f'Current Queues: {current_queues}')
+                            # TODO: Simplify this logic.
+                            updated_queue = {}
                             for (x, y) in current_queues:
-                                if x not in D.keys():
-                                    D[x] = y
+                                if x not in updated_queue.keys():
+                                    updated_queue[x] = y
                                 else:
-                                    D[x] += y
-                            final_queues = [(x, D[x]) for x in D.keys()]
+                                    updated_queue[x] += y
+                            final_queues = [(x, updated_queue[x]) for x in updated_queue.keys()]
                             LOGGER.debug(final_queues)
                             LOGGER.debug("Above is what should be the final queue status")
                             # append the queue they wanna join to
                             for queue in final_queues:
-                                if(queue[0] == self.rs_channel[channel]):
+                                if queue[0] == self.rs_channel[channel]:
                                     # Check if adding amount to the queue would make it 4/4
-                                    if(self.amount(self.rs_channel[channel])+count > 4):
+                                    if amount(self.rs_channel[channel]) + count > 4:
                                         pass
                                     else:
                                         # check to see if we need to update their position or add another position
-                                        if(len(self.sql_command("SELECT amount FROM main WHERE user_id=? AND level=?", (ctx.author.id, self.rs_channel[channel]))) == 0):
+                                        if (len(sql_command("SELECT amount FROM main WHERE user_id=? AND level=?",
+                                                            (ctx.author.id, self.rs_channel[channel]))) == 0):
                                             # They weren't found elsewhere, add them to the new queue
-                                            self.sql_command("INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)", (ctx.author.id, int(queue[1]),self.rs_channel[channel], int(time.time()), length, channel_id))
+                                            sql_command(
+                                                "INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)",
+                                                (ctx.author.id, int(queue[1]), self.rs_channel[channel],
+                                                 int(time.time()), length, channel_id))
                                         else:
                                             # They were found on another queue, so update their position
-                                            self.sql_command(f"UPDATE main SET amount=?, time=?, length=? WHERE user_id=? AND level=?", (int(queue[1]), int(time.time()), length, ctx.author.id, self.rs_channel[channel]))
-                                        if(self.amount(queue[0]) == 4):
-                                            people = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                            sql_command(
+                                                f"UPDATE main SET amount=?, time=?, length=? WHERE user_id=? AND level=?",
+                                                (int(queue[1]), int(time.time()), length, ctx.author.id,
+                                                 self.rs_channel[channel]))
+                                        if amount(queue[0]) == 4:
+                                            people = sql_command("SELECT user_id FROM main WHERE level=?",
+                                                                 [(self.rs_channel[str(ctx.message.channel)])])
                                             string_people = ""
                                             print_people = []
                                             for person in people:
                                                 string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                                                print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
-                                            await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
+                                                print_people.append(
+                                                    (await ctx.guild.fetch_member(person[0])).display_name)
+                                            await ctx.send(
+                                                f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                             await ctx.send("Meet where?")
                                             rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                             formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                            await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
+                                            await rs_log_channel.send(
+                                                f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                             # Remove everyone from the queue
-                                            self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])                                    
+                                            sql_command("DELETE FROM main WHERE level=?",
+                                                        [(self.rs_channel[str(ctx.message.channel)])])
                                         else:
                                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                                            if(self.amount(self.rs_channel[channel]) == 3):
-                                                await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                            if amount(self.rs_channel[channel]) == 3:
+                                                await ctx.send(
+                                                    f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                             else:
-                                                await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                                await ctx.send(
+                                                    f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                 else:
                     await ctx.send(f"{ctx.author.mention}, you aren't RS{self.rs_channel[channel]}")
             else:
@@ -358,44 +386,48 @@ class RSQueue(Cog, name='Queue'):
                 await msg.delete
         elif prefix == "-":
             LOGGER.debug("- command run, attempting to remove them from queue")
-            result = self.sql_command("SELECT amount FROM main WHERE user_id=? AND level=?", (ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
+            result = sql_command("SELECT amount FROM main WHERE user_id=? AND level=?",
+                                 (ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
             LOGGER.debug(result)
-            if(len(result) == 0): # Didn't find them in any queues
+            if len(result) == 0:  # Didn't find them in any queues
                 await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues at the moment")
-            else: # Remove count of them from the queue 
+            else:  # Remove count of them from the queue
                 # Get the level and amount data
                 # Check if removing count would remove more than they are in
-                current_queues = self.sql_command("SELECT level, amount FROM main WHERE user_id=?", [(ctx.author.id)])
+                current_queues = sql_command("SELECT level, amount FROM main WHERE user_id=?", [ctx.author.id])
                 # would return [(11, 2), (10, 3)] for example
                 adding_queue = (self.rs_channel[str(ctx.message.channel)], -count)
                 current_queues.append(adding_queue)
-                D = {}
+                updated_queue = {}
                 for (x, y) in current_queues:
-                    if x not in D.keys():
-                        D[x] = y
+                    if x not in updated_queue.keys():
+                        updated_queue[x] = y
                     else:
-                        D[x] += y
-                final_queues = [(x, D[x]) for x in D.keys()]
+                        updated_queue[x] += y
+                final_queues = [(x, updated_queue[x]) for x in updated_queue.keys()]
                 LOGGER.debug(final_queues)
                 LOGGER.debug("above is the final queues of that person")
                 for queue in final_queues:
                     # Remove only count from the queue they sent the message in
-                    if (queue[0] == self.rs_channel[str(ctx.message.channel)]):
+                    if queue[0] == self.rs_channel[str(ctx.message.channel)]:
                         LOGGER.debug(queue)
-                        if(queue[1] <= 0):
-                            self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(queue[0])))
+                        if queue[1] <= 0:
+                            sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(queue[0])))
                             LOGGER.debug("Removed them from the queue")
                         else:
-                            self.sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?", (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
+                            sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?",
+                                        (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
                             LOGGER.debug("updated the queue they were in")
-                people = self.sql_command("SELECT amount FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                people = sql_command("SELECT amount FROM main WHERE level=?",
+                                     [(self.rs_channel[str(ctx.message.channel)])])
                 count = 0
                 counting = []
                 for person in people:
                     counting.append(person[0])
                     count += int(person[0])
                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
-                await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
+                await ctx.send(
+                    f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
 
     @commands.command(aliases=["o"], help="type !o or !out, which leaves your current RS Queue")
     async def out(self, ctx):
@@ -403,34 +435,36 @@ class RSQueue(Cog, name='Queue'):
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
         sql = "SELECT user_id FROM main WHERE user_id=?"
-        cursor.execute(sql, [(ctx.author.id)])
+        cursor.execute(sql, [ctx.author.id])
         results = cursor.fetchall()
-        if(len(results) != 0): # They were found in an RS Queue
+        if len(results) != 0:  # They were found in an RS Queue
             # remove only one (and delete if they only have one in queue)
-            current_queues = self.sql_command("SELECT level, amount FROM main WHERE user_id=?", [(ctx.author.id)])
+            current_queues = sql_command("SELECT level, amount FROM main WHERE user_id=?", [ctx.author.id])
             # would return [(11, 2), (10, 3)] for example
             adding_queue = (self.rs_channel[str(ctx.message.channel)], -1)
             current_queues.append(adding_queue)
-            D = {}
+            updated_queues = {}
             for (x, y) in current_queues:
-                if x not in D.keys():
-                    D[x] = y
+                if x not in updated_queues.keys():
+                    updated_queues[x] = y
                 else:
-                    D[x] += y
-            final_queues = [(x, D[x]) for x in D.keys()]
-            for queue in final_queues:
+                    updated_queues[x] += y
+            final_queues = [(x, updated_queues[x]) for x in updated_queues.keys()]
+            for updated_queues in final_queues:
                 # Remove only count from the queue they sent the message in
-                if (queue[0] == self.rs_channel[str(ctx.message.channel)]):
-                    LOGGER.debug(queue)
-                    if(queue[1] <= 0):
-                        self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(queue[0])))
+                if updated_queues[0] == self.rs_channel[str(ctx.message.channel)]:
+                    LOGGER.debug(updated_queues)
+                    if updated_queues[1] <= 0:
+                        sql_command("DELETE FROM main WHERE user_id=? AND level=?", (ctx.author.id, int(updated_queues[0])))
                         LOGGER.debug("Removed them from the queue")
                     else:
-                        self.sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?", (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
+                        sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?",
+                                    (int(updated_queues[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
                         LOGGER.debug("updated the queue they were in")
             # Print out the new queue
             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
-            await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
+            await ctx.send(
+                f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({amount(self.rs_channel[str(ctx.message.channel)])}/4)")
         else:
             await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues")
         db.commit()
@@ -443,47 +477,49 @@ class RSQueue(Cog, name='Queue'):
         channel = ""
         add_level = self.rs_channel[str(ctx.message.channel)]
         for club_channel in self.rs_channel:
-            if(club_channel == str(ctx.message.channel)):
+            if club_channel == str(ctx.message.channel):
                 right_channel = True
                 channel = club_channel
-        if(right_channel):
+        if right_channel:
             has_right_role = False
             for role in ctx.author.roles:
-                if(str(role)[2:].isnumeric()): # Check main rs role
-                        if(int(str(role)[2:]) >= int(self.rs_channel[channel])):
-                            has_right_role = True
-                            break
-                elif(str(role)[2:-12].isnumeric()): # Check 3/4 role
-                    if(int(str(role)[2:-12]) >= int(self.rs_channel[channel])):
+                if str(role)[2:].isnumeric():  # Check main rs role
+                    if int(str(role)[2:]) >= int(self.rs_channel[channel]):
                         has_right_role = True
                         break
-                elif(str(role)[2:-2].isnumeric()): # Checks silent role (rs# s)
-                        if(int(str(role)[2:-2]) >= int(self.rs_channel[channel])):
-                            has_right_role = True
-                            break
-                #if(str(role) == f'RS{self.rs_channel[channel]}' or int(str(role)[2:]) > self.rs_channel[channel]):
+                elif str(role)[2:-12].isnumeric():  # Check 3/4 role
+                    if int(str(role)[2:-12]) >= int(self.rs_channel[channel]):
+                        has_right_role = True
+                        break
+                elif str(role)[2:-2].isnumeric():  # Checks silent role (rs# s)
+                    if int(str(role)[2:-2]) >= int(self.rs_channel[channel]):
+                        has_right_role = True
+                        break
+                # if(str(role) == f'RS{self.rs_channel[channel]}' or int(str(role)[2:]) > self.rs_channel[channel]):
                 #    has_right_role = True
-            if(has_right_role):
+            if has_right_role:
                 # This is where the fun begins
                 db = sqlite3.connect('rsqueue.sqlite')
                 cursor = db.cursor()
                 # check if they are in any other queues
-                sql = "SELECT user_id FROM main WHERE user_id=?" 
-                cursor.execute(sql, [(ctx.author.id)])
-                if(len(cursor.fetchall()) == 0): # They weren't found in the database, add them
-                    self.sql_command("INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)", (ctx.author.id, 1, add_level, int(time.time()), length, ctx.channel.id))
+                sql = "SELECT user_id FROM main WHERE user_id=?"
+                cursor.execute(sql, [ctx.author.id])
+                if len(cursor.fetchall()) == 0:  # They weren't found in the database, add them
+                    sql_command(
+                        "INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)",
+                        (ctx.author.id, 1, add_level, int(time.time()), length, ctx.channel.id))
                     # Print out the queue
                     # Check if queue is 4/4
-                    people = self.sql_command("SELECT amount FROM main WHERE level=?", [(add_level)])
+                    people = sql_command("SELECT amount FROM main WHERE level=?", [add_level])
                     count = 0
                     counting = []
                     for person in people:
                         counting.append(person[0])
                         count += int(person[0])
-                    if(count == 4):
+                    if count == 4:
                         # Print out the queue
                         sql = "SELECT user_id FROM main WHERE level=?"
-                        cursor.execute(sql, [(add_level)])
+                        cursor.execute(sql, [add_level])
                         people = cursor.fetchall()
                         string_people = ""
                         print_people = []
@@ -494,76 +530,101 @@ class RSQueue(Cog, name='Queue'):
                         await ctx.send("Meet where?")
                         rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                        await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
+                        await rs_log_channel.send(
+                            f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                         # Remove everyone from the queue
                         sql = "DELETE FROM main WHERE level=?"
-                        cursor.execute(sql, [(add_level)])
+                        cursor.execute(sql, [add_level])
                     else:
                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                        count = self.amount(self.rs_channel[channel])
-                        if(count == 3):
-                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                        count = amount(self.rs_channel[channel])
+                        if count == 3:
+                            await ctx.send(
+                                f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                         else:
-                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                            await ctx.send(
+                                f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     db.commit()
                     cursor.close()
                     db.close()
                 else:
                     # see what queue they are on, and either update their current position or new position
-                    current_queues = self.sql_command("SELECT level, amount FROM main WHERE user_id=?", [(ctx.author.id)])
+                    current_queues = sql_command("SELECT level, amount FROM main WHERE user_id=?", [ctx.author.id])
                     # Check to see if they are trying to update the position of a queue they are in
                     valid = True
                     for (x, y) in current_queues:
                         if x == self.rs_channel[str(ctx.message.channel)]:
                             valid = False
-                    if(valid):
-                        current_queues.append((self.rs_channel[str(ctx.message.channel)],1))
+                    if valid:
+                        current_queues.append((self.rs_channel[str(ctx.message.channel)], 1))
                         LOGGER.debug(current_queues)
-                        D = {}
+                        updated_queues = {}
                         for (x, y) in current_queues:
-                            if x not in D.keys():
-                                D[x] = y
+                            if x not in updated_queues.keys():
+                                updated_queues[x] = y
                             else:
-                                D[x] += y
-                        final_queues = [(x, D[x]) for x in D.keys()]
+                                updated_queues[x] += y
+                        final_queues = [(x, updated_queues[x]) for x in updated_queues.keys()]
                         LOGGER.debug(final_queues)
                         # append the queue they wanna join to the 
                         for queue in final_queues:
-                            if(queue[0] == self.rs_channel[channel]):
+                            if queue[0] == self.rs_channel[channel]:
                                 # Check if adding amount to the queue would make it 4/4
-                                if(self.amount(self.rs_channel[channel])+1 > 4):
+                                if amount(self.rs_channel[channel]) + 1 > 4:
                                     pass
                                 else:
                                     # check to see if we need to update their position or add another position
-                                    if(len(self.sql_command("SELECT amount FROM main WHERE user_id=? AND level=?", (ctx.author.id, self.rs_channel[channel]))) == 0):
+                                    if len(sql_command("SELECT amount FROM main WHERE user_id=? AND level=?",
+                                                       (ctx.author.id, self.rs_channel[channel]))) == 0:
                                         # They weren't found elsewhere, add them to the new queue
-                                        self.sql_command("INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)", (ctx.author.id, int(queue[1]),self.rs_channel[channel], int(time.time()), length, ctx.channel.id))
+                                        sql_command(
+                                            "INSERT INTO main(user_id, amount, level, time, length, channel_id) VALUES(?,?,?,?,?,?)",
+                                            (ctx.author.id, int(queue[1]), self.rs_channel[channel], int(time.time()),
+                                             length, ctx.channel.id))
                                     else:
                                         # They were found on another queue, so update their position
-                                        self.sql_command(f"UPDATE main SET amount=?, time=?, length=? WHERE user_id=? AND level=?", (int(queue[1]), int(time.time()), length, ctx.author.id, self.rs_channel[channel]))
-                                    if(self.amount(queue[0]) == 4):
-                                        people = self.sql_command("SELECT user_id FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                        sql_command(
+                                            f"UPDATE main SET amount=?, time=?, length=? WHERE user_id=? AND level=?",
+                                            (
+                                                int(queue[1]),
+                                                int(time.time()),
+                                                length,
+                                                ctx.author.id,
+                                                self.rs_channel[channel]
+                                            )
+                                        )
+                                    if amount(queue[0]) == 4:
+                                        people = sql_command(
+                                            "SELECT user_id FROM main WHERE level=?",
+                                            [(self.rs_channel[str(ctx.message.channel)])]
+                                        )
                                         string_people = ""
                                         print_people = []
                                         for person in people:
                                             string_people += (await self.bot.fetch_user(person[0])).mention + " "
                                             print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
-                                        await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
+                                        await ctx.send(
+                                            f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                         await ctx.send("Meet where?")
                                         rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                        await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
+                                        await rs_log_channel.send(
+                                            f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                         # Remove everyone from the queue
-                                        self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])                                    
+                                        sql_command("DELETE FROM main WHERE level=?",
+                                                    [(self.rs_channel[str(ctx.message.channel)])])
                                     else:
                                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                                        count = self.amount(self.rs_channel[channel])
-                                        if(count == 3):
-                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                        count = amount(self.rs_channel[channel])
+                                        if count == 3:
+                                            await ctx.send(
+                                                f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                         else:
-                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                            await ctx.send(
+                                                f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     else:
-                        await ctx.send(f"{ctx.author.mention}, you are already queued for a RS{self.rs_channel[channel]}, if you want to add another player to the queue, type +1")
+                        await ctx.send(
+                            f"{ctx.author.mention}, you are already queued for a RS{self.rs_channel[channel]}, if you want to add another player to the queue, type +1")
             else:
                 await ctx.send(f"{ctx.author.mention}, you aren't RS{self.rs_channel[channel]}")
 
@@ -573,37 +634,37 @@ class RSQueue(Cog, name='Queue'):
 
     async def print_queue(self, ctx, level, display=True):
         extras = {
-            'croid' : discord.utils.get(self.bot.emojis, name='croid'),
-            'influence' : discord.utils.get(self.bot.emojis, name='influence'),
-            'nosanc' : discord.utils.get(self.bot.emojis, name='nosanc'),
-            'notele' : discord.utils.get(self.bot.emojis, name='notele'),
-            'rse' : discord.utils.get(self.bot.emojis, name='rse'),
-            'suppress' : discord.utils.get(self.bot.emojis, name='suppress'),
-            'unity' : discord.utils.get(self.bot.emojis, name='unity'),
-            'veng' : discord.utils.get(self.bot.emojis, name='veng'),
-            'barrage' : discord.utils.get(self.bot.emojis, name='barrage'),
-            'laser' : discord.utils.get(self.bot.emojis, name='laser'),
-            'dart' : discord.utils.get(self.bot.emojis, name='dart'),
-            'battery' : discord.utils.get(self.bot.emojis, name='battery'),
-            'solo' : discord.utils.get(self.bot.emojis, name='solo'),
-            'solo2' : discord.utils.get(self.bot.emojis, name='solo2')
+            'croid': discord.utils.get(self.bot.emojis, name='croid'),
+            'influence': discord.utils.get(self.bot.emojis, name='influence'),
+            'nosanc': discord.utils.get(self.bot.emojis, name='nosanc'),
+            'notele': discord.utils.get(self.bot.emojis, name='notele'),
+            'rse': discord.utils.get(self.bot.emojis, name='rse'),
+            'suppress': discord.utils.get(self.bot.emojis, name='suppress'),
+            'unity': discord.utils.get(self.bot.emojis, name='unity'),
+            'veng': discord.utils.get(self.bot.emojis, name='veng'),
+            'barrage': discord.utils.get(self.bot.emojis, name='barrage'),
+            'laser': discord.utils.get(self.bot.emojis, name='laser'),
+            'dart': discord.utils.get(self.bot.emojis, name='dart'),
+            'battery': discord.utils.get(self.bot.emojis, name='battery'),
+            'solo': discord.utils.get(self.bot.emojis, name='solo'),
+            'solo2': discord.utils.get(self.bot.emojis, name='solo2')
         }
         queue_embed = discord.Embed(
-            color = discord.Color.red()
+            color=discord.Color.red()
         )
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
         sql = "SELECT amount FROM main WHERE level=?"
-        cursor.execute(sql, [(level)])
+        cursor.execute(sql, [level])
         people = cursor.fetchall()
         count = 0
         counting = []
         for person in people:
             counting.append(person[0])
             count += int(person[0])
-        if(count > 0):
+        if count > 0:
             sql = "SELECT user_id FROM main WHERE level=?"
-            cursor.execute(sql, [(level)])
+            cursor.execute(sql, [level])
             people_printing = cursor.fetchall()
             list_people = []
             user_ids = []
@@ -611,16 +672,17 @@ class RSQueue(Cog, name='Queue'):
             for people in people_printing:
                 list_people.append((await ctx.guild.fetch_member(people[0])).display_name)
                 user_ids.append((await ctx.guild.fetch_member(people[0])).id)
-                result = self.sql_command("SELECT * FROM data WHERE user_id=?", [((await ctx.guild.fetch_member(people[0])).id)])
+                result = sql_command("SELECT * FROM data WHERE user_id=?",
+                                     [(await ctx.guild.fetch_member(people[0])).id])
                 stuff = cursor.execute('select * from data')
                 names = [description[0] for description in stuff.description]
                 LOGGER.debug(names)
                 names = names[1:]
                 temp = ""
-                if(len(result) != 0):
-                    for i in range(1,len(result[0])):
+                if len(result) != 0:
+                    for i in range(1, len(result[0])):
                         if result[0][i] == 1:
-                            temp += " " + (str(extras[names[i-1]]))
+                            temp += " " + (str(extras[names[i - 1]]))
                 rsmods.append(temp)
             str_people = ""
             emoji_count = 0
@@ -628,13 +690,17 @@ class RSQueue(Cog, name='Queue'):
                 for j in range(counting[i]):
                     str_people += str(list(self.emojis)[emoji_count])
                     emoji_count += 1
-                str_people += " " + list_people[i] + rsmods[i] +  " 🕒 " + str(self.time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
+                str_people += " " + list_people[i] + rsmods[i] + " 🕒 " + str(
+                    queue_time(user_ids[i], self.rs_channel[str(ctx.message.channel)])) + "m"
                 str_people += "\n"
-            queue_embed.add_field(name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)", value=str_people, inline=False)
-            message = await ctx.send(embed=queue_embed)
+            queue_embed.add_field(
+                name=f"The Current RS{self.rs_channel[str(ctx.message.channel)]} Queue ({amount(self.rs_channel[str(ctx.message.channel)])}/4)",
+                value=str_people, inline=False)
+            await ctx.send(embed=queue_embed)
         else:
             if display:
-                await ctx.send(f"No RS{self.rs_channel[str(ctx.message.channel)]} Queues found, you can start one by typing +1")
+                await ctx.send(
+                    f"No RS{self.rs_channel[str(ctx.message.channel)]} Queues found, you can start one by typing +1")
         db.commit()
         cursor.close()
         db.close()
