@@ -5,6 +5,8 @@ from discord.ext import commands
 
 from bot import LOGGER
 from bot import TESTING
+import time
+import asyncio
 
 # TODO: Use an actual settings file.
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
@@ -183,6 +185,133 @@ class RSRole(commands.Cog, name='Role'):
             for str_mod in current_mods:
                 str_mods += "**" + str_mod + "**" + ", "
             await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        # Example payload below
+        #<RawReactionActionEvent message_id=806247306047389696 user_id=805960284543385650 channel_id=805959424081920025 guild_id=805959424081920022 
+        # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
+        # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
+        # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
+        if(payload.message_id == 808782626612838420):
+            reaction = str(payload.emoji)
+            try:
+                rs_role = self.emojis[reaction]
+            except:
+                rs_role = -2
+            if(not payload.member.bot):
+                if(rs_role != -2):
+                    welcome_message = None
+                    if(rs_role != -1):
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                    else:
+                        for role in payload.member.roles:
+                            if(str(role).startswith("rs")):
+                                await payload.member.remove_roles(role)
+                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(60)
+                        await welcome_message.delete()
+        elif(payload.message_id == 808782649946669127):
+            reaction = str(payload.emoji)
+            try:
+                rs_role = self.emojis[reaction]
+            except:
+                rs_role = -2
+            if(not payload.member.bot):
+                if(rs_role != -2):
+                    welcome_message = None
+                    if(rs_role != -1):
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                    else:
+                        for role in payload.member.roles:
+                            print(role)
+                            if(str(role).find("¾ need1more") != -1):
+                                await payload.member.remove_roles(role)
+                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(60)
+                        await welcome_message.delete()
+        elif(payload.message_id == 808960926517559306): 
+            reaction = str(payload.emoji)
+            try:
+                rs_role = self.emojis[reaction]
+            except:
+                rs_role = -2
+            if(not payload.member.bot):
+                if(rs_role != -2):
+                    welcome_message = None
+                    if(rs_role != -1):
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
+                        await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                    else:
+                        for role in payload.member.roles:
+                            print(role)
+                            if(str(role).find(" s") != -1):
+                                await payload.member.remove_roles(role)
+                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await msg.remove_reaction(reaction, payload.member)
+                    if(welcome_message is not None):
+                        await asyncio.sleep(60)
+                        await welcome_message.delete()
+        else:
+            db = sqlite3.connect("rsqueue.sqlite")
+            cursor = db.cursor()
+            sql = "SELECT user_id, message_id, level FROM temp WHERE message_id=?"
+            cursor.execute(sql, [(payload.message_id)])
+            results = cursor.fetchone()
+            print(results)
+            if results is not None:
+                print(results[0], payload.member.id)
+                if(int(results[0]) == int(payload.member.id)):
+                    if str(payload.emoji) == '✅':
+                        sql = "UPDATE main SET time=? WHERE user_id=? AND level=?" 
+                        val = (int(time.time()), payload.member.id, results[2])
+                        cursor.execute(sql, val)
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        await channel.send(f'{payload.member.mention}, you are requed for a RS{results[2]}! ({self.amount(results[2])}/4)')
+                    elif str(payload.emoji) == '❌':
+                        sql = "DELETE FROM main WHERE user_id=? AND level=?"
+                        val = (results[0], results[2])
+                        cursor.execute(sql, val)
+                        user = await self.bot.fetch_user(results[0])
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        await channel.send(f"{user.display_name} has left RS{results[2]} ({self.amount(results[2])}/4)")
+                        self.sql_command("DELETE FROM temp WHERE message_id=?", [(results[1])])
+                elif(int(payload.member.id) != self.bot.user.id):
+                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                    await message.remove_reaction(str(payload.emoji), payload.member)
+                    channel = await self.bot.fetch_channel(payload.channel_id)
+                    await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
+
+        
+
+            db.commit()
+            cursor.close()
+            db.close()
+        
+                    
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        print("on_reaction_remove called")
 
 
 def setup(bot):
