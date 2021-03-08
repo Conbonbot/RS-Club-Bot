@@ -176,7 +176,7 @@ class RSQueue(commands.Cog, name='Queue'):
         self.sql_command( "UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
         rs_level = f'RS{self.rs_channel[str(ctx.message.channel)]}'
         num_players = f'({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)'
-        await ctx.send(f"{ctx.author.mention}, you are requed for a {rs_level}! {num_players}")
+        await ctx.send(f"{ctx.author.mention}, you are requeued for a {rs_level}! {num_players}")
 
     @commands.command(pass_context=True)
     async def corp(self, ctx, corp):
