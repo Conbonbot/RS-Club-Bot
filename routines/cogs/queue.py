@@ -349,7 +349,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             await rs_log_channel.send(
                                                 f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                             # Remove everyone from the queue
-                                            self.self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                            self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
                                         else:
                                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                             count = self.amount(self.rs_channel[channel])
