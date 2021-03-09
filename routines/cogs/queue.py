@@ -161,9 +161,8 @@ class RSQueue(commands.Cog, name='Queue'):
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
                 await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
-                idx = self.sql_command( "SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                LOGGER.debug(queue_time[4], idx[0][0])
-                message = await channel.fetch_message(idx[0][0])
+                id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                message = await channel.fetch_message(id[0][0])
                 await message.delete()
                 self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 pass
@@ -288,14 +287,15 @@ class RSQueue(commands.Cog, name='Queue'):
                                 for person in people:
                                     string_people += (await self.bot.fetch_user(person[0])).mention + " "
                                     print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
+                                await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                 await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                 await ctx.send("Meet where?")
-                                rs_log_channel = await self.bot.fetch_channel(805228742678806599)
-                                formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                await rs_log_channel.send(
-                                    f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                 # Remove everyone from the queue
                                 self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                #
+                                rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                                formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                                await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                             else:
                                 LOGGER.debug("Queue ain't 4/4, print out el queue")
                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
@@ -339,17 +339,16 @@ class RSQueue(commands.Cog, name='Queue'):
                                             print_people = []
                                             for person in people:
                                                 string_people += (await self.bot.fetch_user(person[0])).mention + " "
-                                                print_people.append(
-                                                    (await ctx.guild.fetch_member(person[0])).display_name)
-                                            await ctx.send(
-                                                f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
+                                                print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
+                                            await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
+                                            await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                             await ctx.send("Meet where?")
-                                            rs_log_channel = await self.bot.fetch_channel(805228742678806599)
-                                            formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                            await rs_log_channel.send(
-                                                f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                             # Remove everyone from the queue
                                             self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                            # Print out the rs log
+                                            rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                                            formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                                            await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                         else:
                                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                             count = self.amount(self.rs_channel[channel])
@@ -363,7 +362,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 msg = await ctx.send("Command not run in an RS Channel")
                 await asyncio.sleep(10)
                 await ctx.message.delete()
-                await msg.delete
+                await msg.delete()
         elif prefix == "-":
             LOGGER.debug("- command run, attempting to remove them from queue")
             result = self.sql_command("SELECT amount FROM main WHERE user_id=? AND level=?", (ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
@@ -500,24 +499,23 @@ class RSQueue(commands.Cog, name='Queue'):
                         for person in people:
                             string_people += (await self.bot.fetch_user(person[0])).mention + " "
                             print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
+                        await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                         await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                         await ctx.send("Meet where?")
-                        rs_log_channel = await self.bot.fetch_channel(805228742678806599)
-                        formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                        await rs_log_channel.send(
-                            f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                         # Remove everyone from the queue
                         sql = "DELETE FROM main WHERE level=?"
                         cursor.execute(sql, [add_level])
+                        # Print logs to rs-log
+                        rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                        formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                        await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                     else:
                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                         count = self.amount(self.rs_channel[channel])
                         if count == 3:
-                            await ctx.send(
-                                f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                         else:
-                            await ctx.send(
-                                f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     db.commit()
                     cursor.close()
                     db.close()
@@ -561,15 +559,18 @@ class RSQueue(commands.Cog, name='Queue'):
                                         for person in people:
                                             string_people += (await self.bot.fetch_user(person[0])).mention + " "
                                             print_people.append((await ctx.guild.fetch_member(person[0])).display_name)
-                                        await ctx.send(
-                                            f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
+                                        
+                                        await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                         await ctx.send("Meet where?")
                                         rs_log_channel = await self.bot.fetch_channel(805228742678806599)
                                         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-                                        await rs_log_channel.send(
-                                            f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
+                                        await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                         # Remove everyone from the queue
                                         self.sql_command("DELETE FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
+                                        # Print the logs to rs-log
+                                        rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                                        formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+                                        await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                                     else:
                                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                         count = self.amount(self.rs_channel[channel])
@@ -606,9 +607,7 @@ class RSQueue(commands.Cog, name='Queue'):
             'solo': discord.utils.get(self.bot.emojis, name='solo'),
             'solo2': discord.utils.get(self.bot.emojis, name='solo2')
         }
-        queue_embed = discord.Embed(
-            color=discord.Color.red()
-        )
+        queue_embed = discord.Embed(color=discord.Color.red())
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
         sql = "SELECT amount FROM main WHERE level=?"
