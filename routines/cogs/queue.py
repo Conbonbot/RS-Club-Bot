@@ -178,14 +178,14 @@ class RSQueue(commands.Cog, name='Queue'):
         await ctx.send(f"{ctx.author.mention}, you are requeued for a {rs_level}! {num_players}")
 
     @commands.command(pass_context=True)
-    async def corp(self, ctx, corp):
+    async def corp(self, ctx, *corp):
         member = await ctx.guild.fetch_member(ctx.author.id)
         LOGGER.debug(member.display_name)
         if member.display_name.startswith("["):
             name = member.display_name[member.display_name.find("]") + 2:]
         else:
             name = member.display_name
-        nick = f"[{corp}] " + name
+        nick = f"[{' '.join(corp)}] " + name
         await member.edit(nick=nick)
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
 
@@ -267,8 +267,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     # check if adding amount would overfill the queue
                     queue_status = self.amount(self.rs_channel[channel])
                     if int(queue_status) + count > 4:
-                        await ctx.send(
-                            f"{ctx.author.mention}, adding {count} people to the queue would overfill the queue")
+                        await ctx.send(f"{ctx.author.mention}, adding {count} people to the queue would overfill the queue")
                     else:
                         # check if they are in any other queues
                         database_check = self.sql_command("SELECT user_id FROM main WHERE user_id=?", [(ctx.author.id)])
@@ -402,8 +401,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     counting.append(person[0])
                     count += int(person[0])
                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
-                await ctx.send(
-                    f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
+                await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
 
     @commands.command(aliases=["o"], help="type !o or !out, which leaves your current RS Queue")
     async def out(self, ctx):
@@ -438,8 +436,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         LOGGER.debug("updated the queue they were in")
             # Print out the new queue
             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
-            await ctx.send(
-                f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
+            await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
         else:
             await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues")
         db.commit()
@@ -575,14 +572,11 @@ class RSQueue(commands.Cog, name='Queue'):
                                         await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                         count = self.amount(self.rs_channel[channel])
                                         if count == 3:
-                                            await ctx.send(
-                                                f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping_1more[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                                         else:
-                                            await ctx.send(
-                                                f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
+                                            await ctx.send(f"{ctx.author.mention} joined {self.rs_ping[f'RS{self.rs_channel[channel]}']} ({count}/4)")
                     else:
-                        await ctx.send(
-                            f"{ctx.author.mention}, you are already queued for a RS{self.rs_channel[channel]}, if you want to add another player to the queue, type +1")
+                        await ctx.send(f"{ctx.author.mention}, you are already queued for a RS{self.rs_channel[channel]}, if you want to add another player to the queue, type +1")
             else:
                 await ctx.send(f"{ctx.author.mention}, you aren't RS{self.rs_channel[channel]}")
 
@@ -654,8 +648,7 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send(embed=queue_embed)
         else:
             if display:
-                await ctx.send(
-                    f"No RS{self.rs_channel[str(ctx.message.channel)]} Queues found, you can start one by typing +1")
+                await ctx.send(f"No RS{self.rs_channel[str(ctx.message.channel)]} Queues found, you can start one by typing +1")
         db.commit()
         cursor.close()
         db.close()
