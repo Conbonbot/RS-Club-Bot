@@ -62,7 +62,6 @@ else:
     RS_GROUPS = RS_GROUPS.get('prod')
 
 
-# TODO: migrate to a helper lib that can be used across the entire project.
 
 
 
@@ -81,6 +80,7 @@ class RSQueue(commands.Cog, name='Queue'):
             "rs9-club": 9,
             "rs10-club": 10,
             "rs11-club": 11,
+            "bot-spam": -1
         }
         self.rs_ping = RS_GROUPS['rs_ping']
         self.rs_ping_1more = RS_GROUPS['rs_ping_1more']
