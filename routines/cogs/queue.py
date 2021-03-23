@@ -132,11 +132,14 @@ class RSQueue(commands.Cog, name='Queue'):
     def cog_unload(self):
         self.check_people.cancel()
 
-    @tasks.loop(minutes=1.0)
+    # Change back to once a minute
+    @tasks.loop(minutes=10.0)
     async def check_people(self):
         # This command will run every minute, and check if someone has been in a queue for over n minutes
+        LOGGER.debug("Checking the time")
         db = sqlite3.connect('rsqueue.sqlite')
         cursor = db.cursor()
+        # TODO: This *should* deal with the conflicts until PostgreSQL is used
         cursor.execute("SELECT time, length, user_id, level, channel_id FROM main")
         times = cursor.fetchall()
         for queue_time in times:
