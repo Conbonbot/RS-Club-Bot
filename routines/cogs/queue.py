@@ -90,6 +90,7 @@ class RSQueue(commands.Cog, name='Queue'):
             "3️⃣": 3,
             "4️⃣": 4
         }
+        self.total_info = []
 
 
     def sql_command(self, sql, val, data='rsqueue.sqlite'):
@@ -132,46 +133,57 @@ class RSQueue(commands.Cog, name='Queue'):
     def cog_unload(self):
         self.check_people.cancel()
 
+    def locked(self):
+        try:
+            self.sql_command("SELECT * FROM main", ())
+        except:
+            return True
+        else:
+            return False
+
     # Change back to once a minute
-    @tasks.loop(minutes=10.0)
+    @tasks.loop(seconds=10.0)
     async def check_people(self):
         # This command will run every minute, and check if someone has been in a queue for over n minutes
-        LOGGER.debug("Checking the time")
-        db = sqlite3.connect('rsqueue.sqlite')
-        cursor = db.cursor()
-        # TODO: This *should* deal with the conflicts until PostgreSQL is used
-        cursor.execute("SELECT time, length, user_id, level, channel_id FROM main")
-        times = cursor.fetchall()
-        for queue_time in times:
-            # LOGGER.debug(queue_time)
-            # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
-            minutes = int((time.time() - queue_time[0]) / 60)
-            if minutes == queue_time[1]:
-                # Ping the user
-                user = await self.bot.fetch_user(queue_time[2])
-                channel = await self.bot.fetch_channel(queue_time[4])
-                message = await channel.send(
-                    f"{user.mention}, still in for a RS{queue_time[3]}? React ✅ to stay in the queue, and ❌ to leave the queue")
-                await message.add_reaction('✅')
-                await message.add_reaction('❌')
-                # Add their user_id and message_id to database
-                sql = "INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)"
-                val = (user.id, message.id, queue_time[3])
-                cursor.execute(sql, val)
-                pass
-            elif minutes >= queue_time[1] + 5:
-                self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                user = await self.bot.fetch_user(queue_time[2])
-                channel = await self.bot.fetch_channel(queue_time[4])
-                await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
-                id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                message = await channel.fetch_message(id[0][0])
-                await message.delete()
-                self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                pass
-        db.commit()
-        cursor.close()
-        db.close()
+        LOGGER.debug("Attempting to check the time")
+        while(self.locked()):
+            await asyncio.sleep(5)
+        if(not self.locked()):
+            LOGGER.debug("The database isn't locked")
+            db = sqlite3.connect('rsqueue.sqlite')
+            cursor = db.cursor()
+            cursor.execute("SELECT time, length, user_id, level, channel_id FROM main")
+            times = cursor.fetchall()
+            for queue_time in times:
+                # LOGGER.debug(queue_time)
+                # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
+                minutes = int((time.time() - queue_time[0]) / 60)
+                if minutes == queue_time[1]:
+                    # Ping the user
+                    user = await self.bot.fetch_user(queue_time[2])
+                    channel = await self.bot.fetch_channel(queue_time[4])
+                    message = await channel.send(
+                        f"{user.mention}, still in for a RS{queue_time[3]}? React ✅ to stay in the queue, and ❌ to leave the queue")
+                    await message.add_reaction('✅')
+                    await message.add_reaction('❌')
+                    # Add their user_id and message_id to database
+                    sql = "INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)"
+                    val = (user.id, message.id, queue_time[3])
+                    cursor.execute(sql, val)
+                    pass
+                elif minutes >= queue_time[1] + 5:
+                    self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                    user = await self.bot.fetch_user(queue_time[2])
+                    channel = await self.bot.fetch_channel(queue_time[4])
+                    await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
+                    id = self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                    message = await channel.fetch_message(id[0][0])
+                    await message.delete()
+                    self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
+                    pass
+            db.commit()
+            cursor.close()
+            db.close()
 
     @commands.command(aliases=["r", "^", "staying", "re", "stayin", "YOUGOTILISTARED"])
     async def refresh(self, ctx):
@@ -239,6 +251,49 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
     async def _three(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
+
+    @commands.command()
+    async def test_in(self, ctx, length=60):
+        right_channel = False
+        channel = ""
+        for club_channel in self.rs_channel:
+            if club_channel == str(ctx.message.channel):
+                right_channel = True
+                channel = club_channel
+        if right_channel:
+            has_right_role = False
+            for role in ctx.author.roles:
+                if str(role)[2:].isnumeric():  # Checks main role (rs#)
+                    if int(str(role)[2:]) >= int(self.rs_channel[channel]):
+                        has_right_role = True
+                        break
+                elif str(role)[2:-12].isnumeric():  # Checks 3/4 role (rs# 3/4 1more)
+                    if int(str(role)[2:-12]) >= int(self.rs_channel[channel]):
+                        has_right_role = True
+                        break
+                elif str(role)[2:-2].isnumeric():  # Checks silent role (rs# s)
+                    if int(str(role)[2:-2]) >= int(self.rs_channel[channel]):
+                        has_right_role = True
+                        break
+            if has_right_role:
+                if ctx.author.id in [person["user_id"] for person in self.total_info] and self.rs_channel[channel] in [person["level"] for person in self.total_info]:
+                    await ctx.send("you already exist in the queue")
+                else:
+                    person = {"user_id" : ctx.author.id, "amount" : 1, "level" : self.rs_channel[channel], "time" : int(time.time()), "channel_id" : ctx.channel.id}
+                    self.total_info.append(person)
+                    await ctx.send("Welcome to the queue")
+            else:
+                await ctx.send(f"{ctx.author.mention}, you aren't RS{self.rs_channel[channel]}")
+        else:
+            msg = await ctx.send("Command not run in an RS Channel")
+            await asyncio.sleep(10)
+            await ctx.message.delete()
+            await msg.delete()
+
+    @commands.command()
+    async def test_queue(self, ctx):
+        for person in self.total_info:
+            await ctx.send(person)
 
     async def everything(self, ctx, prefix, count, length, channel_id):
         LOGGER.debug(f"Running the everything command")
