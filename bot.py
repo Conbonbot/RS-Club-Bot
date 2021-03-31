@@ -74,5 +74,4 @@ if __name__ == '__main__':
         case_insensitive=True,
         help_command=None
     )
-    print("HERE'S THE TOKEN", TEMP_TOKEN)
     bot.run(TOKEN)

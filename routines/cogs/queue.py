@@ -142,7 +142,7 @@ class RSQueue(commands.Cog, name='Queue'):
             return False
 
     # Change back to once a minute
-    @tasks.loop(seconds=10.0)
+    @tasks.loop(minutes=1.0)
     async def check_people(self):
         # This command will run every minute, and check if someone has been in a queue for over n minutes
         LOGGER.debug("Attempting to check the time")
