@@ -130,17 +130,15 @@ class RSQueue(commands.Cog, name='Queue'):
         for p in person:
             return int((time.time() - int(p)) / 60)
 
-    def cog_unload(self):
-        self.check_people.cancel()
 
 
-
-    # Change back to once a minute
     @tasks.loop(minutes=1.0)
     async def check_people(self):
         # This command will run every minute, and check if someone has been in a queue for over n minutes
         LOGGER.debug("Attempting to check the time")
         times = await self.sql_command("SELECT time, length, user_id, level, channel_id FROM main", ())
+        channel = await self.bot.fetch_channel(805963630004535368)
+        await channel.send(f"Checking time at {time.time()}")
         for queue_time in times:
             # LOGGER.debug(queue_time)
             # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
