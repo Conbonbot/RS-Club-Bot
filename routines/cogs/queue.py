@@ -163,7 +163,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 await self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
                 channel = await self.bot.fetch_channel(queue_time[4])
-                await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({self.amount(queue_time[3])}/4)")
+                await channel.send(f"{user.display_name} has left RS{queue_time[3]} ({await self.amount(queue_time[3])}/4)")
                 id = await self.sql_command("SELECT message_id FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 message = await channel.fetch_message(id[0][0])
                 await message.delete()
@@ -174,7 +174,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def refresh(self, ctx):
         await self.sql_command( "UPDATE main SET time=? WHERE user_id=? AND level=?", (int(time.time()), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
         rs_level = f'RS{self.rs_channel[str(ctx.message.channel)]}'
-        num_players = f'({self.amount(self.rs_channel[str(ctx.message.channel)])}/4)'
+        num_players = f'({await self.amount(self.rs_channel[str(ctx.message.channel)])}/4)'
         await ctx.send(f"{ctx.author.mention}, you are requeued for a {rs_level}! {num_players}")
 
     @commands.command(pass_context=True)
@@ -438,13 +438,8 @@ class RSQueue(commands.Cog, name='Queue'):
                             await self.sql_command("UPDATE main SET amount=? WHERE user_id=? AND level=?", (int(queue[1]), ctx.author.id, self.rs_channel[str(ctx.message.channel)]))
                             LOGGER.debug("updated the queue they were in")
                 people = await self.sql_command("SELECT amount FROM main WHERE level=?", [(self.rs_channel[str(ctx.message.channel)])])
-                count = 0
-                counting = []
-                for person in people:
-                    counting.append(person[0])
-                    count += int(person[0])
                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)], False)
-                await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({count}/4)")
+                await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({await self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
 
     @commands.command(aliases=["o"], help="type !o or !out, which leaves your current RS Queue")
     async def out(self, ctx):
