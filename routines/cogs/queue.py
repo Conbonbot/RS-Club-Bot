@@ -136,6 +136,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def check_people(self):
         # This command will run every minute, and check if someone has been in a queue for over n minutes
         LOGGER.debug("Attempting to check the time")
+        print("Checking the time")
         times = await self.sql_command("SELECT time, length, user_id, level, channel_id FROM main", ())
         for queue_time in times:
             # LOGGER.debug(queue_time)
