@@ -1,4 +1,5 @@
 import sqlite3
+import aiosqlite
 
 import discord
 from discord.ext import commands
@@ -41,19 +42,19 @@ class RSRole(commands.Cog, name='Role'):
         }
 
 
-    def sql_command(self, sql, val, data='rsqueue.sqlite'):
-        db = sqlite3.connect(data)
-        cursor = db.cursor()
-        cursor.execute(sql, val)
-        results = cursor.fetchall()
-        db.commit()
-        cursor.close()
-        db.close()
+    async def sql_command(self, sql, val, data='rsqueue.sqlite'):
+        db = await aiosqlite.connect(data)
+        cursor = await db.cursor()
+        await cursor.execute(sql, val)
+        results = await cursor.fetchall()
+        await db.commit()
+        await cursor.close()
+        await db.close()
         return results
 
 
-    def amount(self, level):
-        people = self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
+    async def amount(self, level):
+        people = await self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
         count = 0
         counting = []
         for person in people:
@@ -181,11 +182,11 @@ class RSRole(commands.Cog, name='Role'):
             mod = mod.lower()
             if mod in current_mods:
                 # Check to see if they already are in the data table
-                results = self.sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
+                results = await self.sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
                 if len(results) == 0:
-                    self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+                    await self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
                 else:
-                    self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
+                    await self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
                 await ctx.send(
                     f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
             else:
@@ -218,7 +219,7 @@ class RSRole(commands.Cog, name='Role'):
             db.close()
             mod = mod.lower()
             if mod in current_mods:
-                self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
+                await self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
                 await ctx.send(
                     f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
             else:
@@ -329,7 +330,7 @@ class RSRole(commands.Cog, name='Role'):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)
                         await message.delete()
-                        await channel.send(f'{payload.member.mention}, you are requed for a RS{results[2]}! ({self.amount(results[2])}/4)')
+                        await channel.send(f'{payload.member.mention}, you are requed for a RS{results[2]}! ({await self.amount(results[2])}/4)')
                     elif str(payload.emoji) == '❌':
                         sql = "DELETE FROM main WHERE user_id=? AND level=?"
                         val = (results[0], results[2])
@@ -339,8 +340,8 @@ class RSRole(commands.Cog, name='Role'):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)
                         await message.delete()
-                        await channel.send(f"{user.display_name} has left RS{results[2]} ({self.amount(results[2])}/4)")
-                        self.sql_command("DELETE FROM temp WHERE message_id=?", [(results[1])])
+                        await channel.send(f"{user.display_name} has left RS{results[2]} ({await self.amount(results[2])}/4)")
+                        await self.sql_command("DELETE FROM temp WHERE message_id=?", [(results[1])])
                 elif(int(payload.member.id) != self.bot.user.id):
                     message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                     await message.remove_reaction(str(payload.emoji), payload.member)
