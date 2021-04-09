@@ -5,6 +5,8 @@ import os
 import discord
 import sqlite3
 
+import psycopg2
+
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -37,6 +39,10 @@ DB_TABLES = [
     'data(user_id TEXT, croid INTEGER DEFAULT 0, influence INTEGER DEFAULT 0, nosanc INTEGER DEFAULT 0, notele INTEGER DEFAULT 0, rse INTEGER DEFAULT 0, suppress INTEGER DEFAULT 0, unity INTEGER DEFAULT 0, veng INTEGER DEFAULT 0,barrage INTEGER DEFAULT 0, laser INTEGER DEFAULT 0, battery INTEGER DEFAULT 0, dart INTEGER DEFAULT 0, solo INTEGER DEFAULT 0, solo2 INTEGER DEFAULT 0)',
     'temp(user_id TEXT, message_id TEXT, level INTEGER)',
 ]
+
+conn = psycopg2.connect(
+   host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')
+)
 
 
 class RSClubBot(commands.Bot):

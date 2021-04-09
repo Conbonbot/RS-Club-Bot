@@ -139,8 +139,6 @@ class RSQueue(commands.Cog, name='Queue'):
         print("Checking the time")
         times = await self.sql_command("SELECT time, length, user_id, level, channel_id FROM main", ())
         for queue_time in times:
-            # LOGGER.debug(queue_time)
-            # LOGGER.debug(int(time.time()), queue_time[0], int(time.time())-queue_time[0], int((time.time()-queue_time[0])/60))
             minutes = int((time.time() - queue_time[0]) / 60)
             if minutes == queue_time[1]:
                 # Ping the user
@@ -151,11 +149,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 await message.add_reaction('✅')
                 await message.add_reaction('❌')
                 # Add their user_id and message_id to database
-                #sql = "INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)"
-                #val = (user.id, message.id, queue_time[3])
-                #cursor.execute(sql, val)
                 await self.sql_command("INSERT INTO temp(user_id, message_id, level) VALUES(?,?,?)", (user.id, message.id, queue_time[3]))
-                pass
             elif minutes >= queue_time[1] + 5:
                 await self.sql_command("DELETE FROM main WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
                 user = await self.bot.fetch_user(queue_time[2])
@@ -165,7 +159,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 message = await channel.fetch_message(id[0][0])
                 await message.delete()
                 await self.sql_command("DELETE FROM temp WHERE user_id=? AND level=?", (queue_time[2], queue_time[3]))
-                pass
 
     @commands.command(aliases=["r", "^", "staying", "re", "stayin", "YOUGOTILISTARED"])
     async def refresh(self, ctx):
@@ -233,49 +226,6 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
     async def _three(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
-
-    @commands.command()
-    async def test_in(self, ctx, length=60):
-        right_channel = False
-        channel = ""
-        for club_channel in self.rs_channel:
-            if club_channel == str(ctx.message.channel):
-                right_channel = True
-                channel = club_channel
-        if right_channel:
-            has_right_role = False
-            for role in ctx.author.roles:
-                if str(role)[2:].isnumeric():  # Checks main role (rs#)
-                    if int(str(role)[2:]) >= int(self.rs_channel[channel]):
-                        has_right_role = True
-                        break
-                elif str(role)[2:-12].isnumeric():  # Checks 3/4 role (rs# 3/4 1more)
-                    if int(str(role)[2:-12]) >= int(self.rs_channel[channel]):
-                        has_right_role = True
-                        break
-                elif str(role)[2:-2].isnumeric():  # Checks silent role (rs# s)
-                    if int(str(role)[2:-2]) >= int(self.rs_channel[channel]):
-                        has_right_role = True
-                        break
-            if has_right_role:
-                if ctx.author.id in [person["user_id"] for person in self.total_info] and self.rs_channel[channel] in [person["level"] for person in self.total_info]:
-                    await ctx.send("you already exist in the queue")
-                else:
-                    person = {"user_id" : ctx.author.id, "amount" : 1, "level" : self.rs_channel[channel], "time" : int(time.time()), "channel_id" : ctx.channel.id}
-                    self.total_info.append(person)
-                    await ctx.send("Welcome to the queue")
-            else:
-                await ctx.send(f"{ctx.author.mention}, you aren't RS{self.rs_channel[channel]}")
-        else:
-            msg = await ctx.send("Command not run in an RS Channel")
-            await asyncio.sleep(10)
-            await ctx.message.delete()
-            await msg.delete()
-
-    @commands.command()
-    async def test_queue(self, ctx):
-        for person in self.total_info:
-            await ctx.send(person)
 
     async def everything(self, ctx, prefix, count, length, channel_id):
         LOGGER.debug(f"Running the everything command")
