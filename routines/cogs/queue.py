@@ -672,11 +672,13 @@ class RSQueue(commands.Cog, name='Queue'):
                     users_mods = (await session.get(Data, person.user_id))
                     i = 0
                     temp = ""
-                    for mod in self.current_mods:
-                        #await ctx.send(f"Mod: {mod} {getattr(users_mods, mod)}")
-                        if(getattr(users_mods, mod) == True):
-                            temp += " " + (str(extras[self.current_mods[i]]))
-                        i += 1
+                    LOGGER.debug(f"Here is users_mods: {users_mods}")
+                    if users_mods is not None:
+                        for mod in self.current_mods:
+                            #await ctx.send(f"Mod: {mod} {getattr(users_mods, mod)}")
+                            if(getattr(users_mods, mod) == True):
+                                temp += " " + (str(extras[self.current_mods[i]]))
+                            i += 1
                     rsmods.append(temp)
                 str_people = ""
                 emoji_count = 0
