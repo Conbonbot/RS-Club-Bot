@@ -179,12 +179,12 @@ class RSRole(commands.Cog, name='Role'):
             async with sessionmaker.begin() as session:
                 if mod in self.current_mods:
                     # Check to see if they already are in the data table
-                    results = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                    results = (await session.get(Data, ctx.author.id))
                     if results is None:
-                        mod_insert = Data(**{'server_id': ctx.guild.id, 'user_id': ctx.author.id, mod: True})
+                        mod_insert = Data(**{'user_id': ctx.author.id, mod: True})
                         session.add(mod_insert)
                     else:
-                        user_mods = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                        user_mods = (await session.get(Data, ctx.author.id))
                         setattr(user_mods, mod, True)
                     await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:
@@ -209,7 +209,7 @@ class RSRole(commands.Cog, name='Role'):
         if right_channel:
             async with sessionmaker.begin() as session:
                 if mod in self.current_mods:
-                    user_mods = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                    user_mods = (await session.get(Data, ctx.author.id))
                     setattr(user_mods, mod, False)
                     await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:

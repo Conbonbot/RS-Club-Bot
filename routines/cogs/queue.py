@@ -5,7 +5,6 @@ from aiosqlite.core import LOG
 
 import discord
 import sqlite3
-import aiosqlite
 
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -192,6 +191,28 @@ class RSQueue(commands.Cog, name='Queue'):
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
 
     @commands.command()
+    @commands.has_role("mod")
+    async def transfer(self, ctx):
+        db = sqlite3.connect("rsqueue.sqlite")
+        cursor = db.cursor()
+        cursor.execute("SELECT * FROM data", ())
+        results = cursor.fetchall()
+        print(results)
+        await ctx.send("Starting to transfer data")
+        async with sessionmaker.begin() as session:
+            for result in results:
+                #self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
+                new_data = []
+                for i in range(1, len(result)):
+                    if result[i] == 0:
+                        new_data.append(False)
+                    else:
+                        new_data.append(True)
+                rs_mod_data = Data(user_id=int(result[0]), croid=new_data[0], influence=new_data[1], nosanc=new_data[2], notele=new_data[3], rse=new_data[4], suppress=new_data[5], unity=new_data[6], veng=new_data[7], barrage=new_data[8], laser=new_data[9], dart=new_data[10], battery=new_data[11], solo=new_data[12], solo2=new_data[13])
+                session.add(rs_mod_data)
+        await ctx.send("Finished!")
+
+    @commands.command()
     async def rsc(self, ctx):
         role = discord.utils.get(ctx.author.guild.roles, name='🌟')
         if role in ctx.author.roles:
@@ -218,12 +239,21 @@ class RSQueue(commands.Cog, name='Queue'):
         if level is not None:
             async with sessionmaker.begin() as session:
                 #await ctx.send(f"The RS{level} queue has been cleared")
-                users = (await session.execute(select(Queue).where(Queue.level == level))).scalars()
+                users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
                 for user in users:
                     await session.delete(user)
+                message = await ctx.send(f"RS{level} Queue cleared")
+                await asyncio.sleep(5)
+                await ctx.message.delete()
+                await message.delete()
+
         else:
             async with sessionmaker.begin() as session:
-                await session.execute(delete(Queue))
+                await session.query(Queue).delete()
+                message = await ctx.send("All queues cleared")
+                await asyncio.sleep(5)
+                await ctx.message.delete()
+                await message.delete()
             
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
@@ -660,7 +690,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     list_people.append((await ctx.guild.fetch_member(person.user_id)).display_name)
                     user_ids.append((await ctx.guild.fetch_member(person.user_id)).id)
                     #result = await self.sql_command("SELECT * FROM data WHERE user_id=?", [(await ctx.guild.fetch_member(people[0])).id])
-                    users_mods = (await session.get(Data, (person.server_id, person.user_id)))
+                    users_mods = (await session.get(Data, person.user_id))
                     i = 0
                     temp = ""
                     for mod in self.current_mods:

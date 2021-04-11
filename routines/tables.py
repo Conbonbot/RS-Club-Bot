@@ -21,7 +21,6 @@ class Queue(Base):
 
 class Data(Base):
     __tablename__ = 'data'
-    server_id = Column(BigInteger, primary_key=True)
     user_id = Column(BigInteger, primary_key=True)
     croid = Column(Boolean)
     influence = Column(Boolean)
