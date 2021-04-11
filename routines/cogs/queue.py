@@ -190,27 +190,6 @@ class RSQueue(commands.Cog, name='Queue'):
         await member.edit(nick=nick)
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
 
-    @commands.command()
-    @commands.has_role("mod")
-    async def transfer(self, ctx):
-        db = sqlite3.connect("rsqueue.sqlite")
-        cursor = db.cursor()
-        cursor.execute("SELECT * FROM data", ())
-        results = cursor.fetchall()
-        print(results)
-        await ctx.send("Starting to transfer data")
-        async with sessionmaker.begin() as session:
-            for result in results:
-                #self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
-                new_data = []
-                for i in range(1, len(result)):
-                    if result[i] == 0:
-                        new_data.append(False)
-                    else:
-                        new_data.append(True)
-                rs_mod_data = Data(user_id=int(result[0]), croid=new_data[0], influence=new_data[1], nosanc=new_data[2], notele=new_data[3], rse=new_data[4], suppress=new_data[5], unity=new_data[6], veng=new_data[7], barrage=new_data[8], laser=new_data[9], dart=new_data[10], battery=new_data[11], solo=new_data[12], solo2=new_data[13])
-                session.add(rs_mod_data)
-        await ctx.send("Finished!")
 
     @commands.command()
     async def rsc(self, ctx):
