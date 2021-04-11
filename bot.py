@@ -3,12 +3,17 @@ import logging
 import os
 
 import discord
-import sqlite3
 
 import psycopg2
 
 from discord.ext import commands
 from dotenv import load_dotenv
+
+from sqlalchemy.sql.functions import char_length
+import argparse
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.engine.url import URL
+import asyncio
 
 import routines
 
@@ -34,15 +39,13 @@ if not TOKEN:
     raise ValueError(
         'Found no discord token, please specify a DISCORD_TOKEN or TEMP_DISCORD_TOKEN environment variable.')
 
-DB_TABLES = [
-    'main(user_id TEXT, amount INTEGER, level INTEGER, time INTEGER, length INTEGER, channel_id TEXT)',
-    'data(user_id TEXT, croid INTEGER DEFAULT 0, influence INTEGER DEFAULT 0, nosanc INTEGER DEFAULT 0, notele INTEGER DEFAULT 0, rse INTEGER DEFAULT 0, suppress INTEGER DEFAULT 0, unity INTEGER DEFAULT 0, veng INTEGER DEFAULT 0,barrage INTEGER DEFAULT 0, laser INTEGER DEFAULT 0, battery INTEGER DEFAULT 0, dart INTEGER DEFAULT 0, solo INTEGER DEFAULT 0, solo2 INTEGER DEFAULT 0)',
-    'temp(user_id TEXT, message_id TEXT, level INTEGER)',
-]
 
-conn = psycopg2.connect(
-   host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')
-)
+
+DB_TABLES = [
+    'queue(server_id BIGINT, user_id BIGINT, amount SMALLINT, level SMALLINT, time BIGINT, length INTEGER, channel_id BIGINT);',
+    'data(server_id BIGINT, user_id BIGINT, croid BOOLEAN DEFAULT FALSE, influence BOOLEAN DEFAULT FALSE, nosanc BOOLEAN DEFAULT FALSE, notele BOOLEAN DEFAULT FALSE, rse BOOLEAN DEFAULT FALSE, suppress BOOLEAN DEFAULT FALSE, unity BOOLEAN DEFAULT FALSE, veng BOOLEAN DEFAULT FALSE,barrage BOOLEAN DEFAULT FALSE, laser BOOLEAN DEFAULT FALSE, battery BOOLEAN DEFAULT FALSE, dart BOOLEAN DEFAULT FALSE, solo BOOLEAN DEFAULT FALSE, solo2 BOOLEAN DEFAULT FALSE);',
+    'temp(server_id BIGINT, user_id BIGINT, message_id BIGINT, amount SMALLINT, level SMALLINT);',
+]
 
 
 class RSClubBot(commands.Bot):
@@ -60,11 +63,14 @@ class RSClubBot(commands.Bot):
     @staticmethod
     def _prep_db():
         """Makes sure the database has the required tables for the bot."""
-        with sqlite3.connect('rsqueue.sqlite') as db:
-            cursor = db.cursor()
+        with psycopg2.connect(host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')) as conn:
+            cur = conn.cursor()
             for table in DB_TABLES:
-                LOGGER.debug(f'Creating DB table: {table}')
-                cursor.execute(f'CREATE TABLE IF NOT EXISTS {table}')
+                LOGGER.debug(f"Creating DB table: {table}")
+                cur.execute(f'CREATE TABLE IF NOT EXISTS {table}')
+            conn.commit()
+            cur.close()
+
 
 
 if __name__ == '__main__':

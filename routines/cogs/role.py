@@ -9,6 +9,20 @@ from bot import TESTING
 import time
 import asyncio
 
+from datetime import datetime
+from discord.ext import commands, tasks
+from sqlalchemy import select
+from sqlalchemy import update
+from sqlalchemy import delete
+from sqlalchemy import and_
+from sqlalchemy.sql.selectable import Select
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
+
+from routines.tables import Queue, Data, Temp
+from routines import sessionmaker
+
 # TODO: Use an actual settings file.
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
 
@@ -40,27 +54,18 @@ class RSRole(commands.Cog, name='Role'):
             "rs11-club": 11,
             "bot-spam": -1
         }
+        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
 
 
-    async def sql_command(self, sql, val, data='rsqueue.sqlite'):
-        db = await aiosqlite.connect(data)
-        cursor = await db.cursor()
-        await cursor.execute(sql, val)
-        results = await cursor.fetchall()
-        await db.commit()
-        await cursor.close()
-        await db.close()
-        return results
 
 
     async def amount(self, level):
-        people = await self.sql_command("SELECT amount FROM main WHERE level=?", [(level)])
-        count = 0
-        counting = []
-        for person in people:
-            counting.append(person[0])
-            count += int(person[0])
-        return count
+        async with sessionmaker.begin() as session:
+            people = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
+            count = 0
+            for person in people:
+                count += int(person.amount)
+            return count
 
     @commands.command()
     async def role(self, ctx):
@@ -171,29 +176,22 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            db = sqlite3.connect('rsqueue.sqlite')
-            cursor = db.cursor()
-            stuff = cursor.execute('select * from data')
-            current_mods = [description[0] for description in stuff.description]
-            current_mods = current_mods[1:]
-            db.commit()
-            cursor.close()
-            db.close()
-            mod = mod.lower()
-            if mod in current_mods:
-                # Check to see if they already are in the data table
-                results = await self.sql_command("SELECT user_id FROM data WHERE user_id=?", [ctx.author.id])
-                if len(results) == 0:
-                    await self.sql_command(f"INSERT INTO data(user_id, {mod}) VALUES(?,?)", (ctx.author.id, 1))
+            async with sessionmaker.begin() as session:
+                if mod in self.current_mods:
+                    # Check to see if they already are in the data table
+                    results = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                    if results is None:
+                        mod_insert = Data(**{'server_id': ctx.guild.id, 'user_id': ctx.author.id, mod: True})
+                        session.add(mod_insert)
+                    else:
+                        user_mods = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                        setattr(user_mods, mod, True)
+                    await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:
-                    await self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (1, ctx.author.id))
-                await ctx.send(
-                    f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
-            else:
-                str_mods = ""
-                for str_mod in current_mods:
-                    str_mods += "**" + str_mod + "**" + ", "
-                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+                    str_mods = ""
+                    for str_mod in self.current_mods:
+                        str_mods += "**" + str_mod + "**" + ", "
+                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -209,24 +207,16 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            db = sqlite3.connect('rsqueue.sqlite')
-            cursor = db.cursor()
-            stuff = cursor.execute('select * from data')
-            current_mods = [description[0] for description in stuff.description]
-            current_mods = current_mods[1:]
-            db.commit()
-            cursor.close()
-            db.close()
-            mod = mod.lower()
-            if mod in current_mods:
-                await self.sql_command(f"UPDATE data SET {mod}=? WHERE user_id=?", (0, ctx.author.id))
-                await ctx.send(
-                    f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
-            else:
-                str_mods = ""
-                for str_mod in current_mods:
-                    str_mods += "**" + str_mod + "**" + ", "
-                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+            async with sessionmaker.begin() as session:
+                if mod in self.current_mods:
+                    user_mods = (await session.get(Data, (ctx.guild.id, ctx.author.id)))
+                    setattr(user_mods, mod, False)
+                    await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+                else:
+                    str_mods = ""
+                    for str_mod in self.current_mods:
+                        str_mods += "**" + str_mod + "**" + ", "
+                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -313,46 +303,52 @@ class RSRole(commands.Cog, name='Role'):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
         else:
-            db = sqlite3.connect("rsqueue.sqlite")
-            cursor = db.cursor()
-            sql = "SELECT user_id, message_id, level FROM temp WHERE message_id=?"
-            cursor.execute(sql, [(payload.message_id)])
-            results = cursor.fetchone()
-            print(results)
-            if results is not None:
-                print(results[0], payload.member.id)
-                if(int(results[0]) == int(payload.member.id)):
+            async with sessionmaker.begin() as session:
+                results = (await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars()
+            if len(results.all()) != 0:
+                if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
                     if str(payload.emoji) == '✅':
-                        sql = "UPDATE main SET time=? WHERE user_id=? AND level=?" 
-                        val = (int(time.time()), payload.member.id, results[2])
-                        cursor.execute(sql, val)
-                        channel = await self.bot.fetch_channel(payload.channel_id)
-                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                        await message.remove_reaction(str(payload.emoji), payload.member)
-                        await message.delete()
-                        await channel.send(f'{payload.member.mention}, you are requed for a RS{results[2]}! ({await self.amount(results[2])}/4)')
+                        async with sessionmaker.begin() as session:
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            user.time = int(time.time())
+                            level = user.level
+                            amount = user.amount
+
+                            queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
+                            queue_user.time = int(time.time())
+
+                            
+                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            await message.remove_reaction(str(payload.emoji), payload.member)
+                            await message.delete()
+                            await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            await session.delete(user)
+                            await session.commit()
                     elif str(payload.emoji) == '❌':
-                        sql = "DELETE FROM main WHERE user_id=? AND level=?"
-                        val = (results[0], results[2])
-                        cursor.execute(sql, val)
-                        user = await self.bot.fetch_user(results[0])
-                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        async with sessionmaker.begin() as session:
+                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            await message.remove_reaction(str(payload.emoji), payload.member)
+                            await message.delete()
+                            user = (await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id)))
+                            amount = user.amount
+                            level = user.level
+
+                            User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
+                            await session.delete(User_leave)
+                            await session.commit()
+                        await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
+                        async with sessionmaker.begin() as session:
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            await session.delete(user)
+                            await session.commit()
+                    elif(int(payload.member.id) != self.bot.user.id):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)
-                        await message.delete()
-                        await channel.send(f"{user.display_name} has left RS{results[2]} ({await self.amount(results[2])}/4)")
-                        await self.sql_command("DELETE FROM temp WHERE message_id=?", [(results[1])])
-                elif(int(payload.member.id) != self.bot.user.id):
-                    message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    await message.remove_reaction(str(payload.emoji), payload.member)
-                    channel = await self.bot.fetch_channel(payload.channel_id)
-                    await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
-
-        
-
-            db.commit()
-            cursor.close()
-            db.close()
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
         
                     
 

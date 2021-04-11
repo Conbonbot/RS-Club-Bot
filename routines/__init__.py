@@ -3,6 +3,26 @@ from discord.ext import commands
 
 from bot import LOGGER
 
+import psycopg2
+import os
+from dotenv import load_dotenv
+from sqlalchemy.sql.functions import char_length
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.engine.url import URL
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker as maker
+import asyncio
+
+postgres_URL = URL.create('postgresql+asyncpg',
+                          database=os.getenv('DATABASE'),
+                          username=os.getenv('NAME'),
+                          password=os.getenv('PASSWORD'),
+                          host=os.getenv('HOST'))
+
+
+engine = create_async_engine(postgres_URL, echo=True)
+sessionmaker = maker(bind=engine, class_=AsyncSession)
+
 
 class Routine(object):
     """Base class for all events and commands."""
