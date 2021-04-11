@@ -176,22 +176,24 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            async with sessionmaker.begin() as session:
-                if mod in self.current_mods:
-                    # Check to see if they already are in the data table
-                    results = (await session.get(Data, ctx.author.id))
-                    if results is None:
-                        mod_insert = Data(**{'user_id': ctx.author.id, mod: True})
-                        session.add(mod_insert)
-                    else:
-                        user_mods = (await session.get(Data, ctx.author.id))
-                        setattr(user_mods, mod, True)
-                    await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            session = sessionmaker()
+            if mod in self.current_mods:
+                # Check to see if they already are in the data table
+                results = (await session.get(Data, ctx.author.id))
+                if results is None:
+                    mod_insert = Data(**{'user_id': ctx.author.id, mod: True})
+                    session.add(mod_insert)
                 else:
-                    str_mods = ""
-                    for str_mod in self.current_mods:
-                        str_mods += "**" + str_mod + "**" + ", "
-                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+                    user_mods = (await session.get(Data, ctx.author.id))
+                    setattr(user_mods, mod, True)
+                await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            else:
+                str_mods = ""
+                for str_mod in self.current_mods:
+                    str_mods += "**" + str_mod + "**" + ", "
+                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+            await session.commit()
+            await session.close()
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -207,16 +209,18 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            async with sessionmaker.begin() as session:
-                if mod in self.current_mods:
-                    user_mods = (await session.get(Data, ctx.author.id))
-                    setattr(user_mods, mod, False)
-                    await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
-                else:
-                    str_mods = ""
-                    for str_mod in self.current_mods:
-                        str_mods += "**" + str_mod + "**" + ", "
-                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+            session = sessionmaker()
+            if mod in self.current_mods:
+                user_mods = (await session.get(Data, ctx.author.id))
+                setattr(user_mods, mod, False)
+                await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+            else:
+                str_mods = ""
+                for str_mod in self.current_mods:
+                    str_mods += "**" + str_mod + "**" + ", "
+                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+            await session.commit()
+            await session.close()
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -325,7 +329,7 @@ class RSRole(commands.Cog, name='Role'):
                             await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
                             user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
                             await session.delete(user)
-                            await session.commit()
+                            await session.flush()
                     elif str(payload.emoji) == '❌':
                         async with sessionmaker.begin() as session:
                             channel = await self.bot.fetch_channel(payload.channel_id)
@@ -338,12 +342,12 @@ class RSRole(commands.Cog, name='Role'):
 
                             User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
                             await session.delete(User_leave)
-                            await session.commit()
+                            await session.flush()
                         await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
                         async with sessionmaker.begin() as session:
                             user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
                             await session.delete(user)
-                            await session.commit()
+                            await session.flush()
                     elif(int(payload.member.id) != self.bot.user.id):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)

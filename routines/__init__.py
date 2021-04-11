@@ -21,7 +21,7 @@ postgres_URL = URL.create('postgresql+asyncpg',
 
 
 engine = create_async_engine(postgres_URL, echo=True)
-sessionmaker = maker(bind=engine, class_=AsyncSession)
+sessionmaker = maker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 
 class Routine(object):
