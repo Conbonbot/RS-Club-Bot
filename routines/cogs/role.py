@@ -312,42 +312,40 @@ class RSRole(commands.Cog, name='Role'):
             if len(results.all()) != 0:
                 if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
                     if str(payload.emoji) == '✅':
-                        async with sessionmaker.begin() as session:
-                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                            user.time = int(time.time())
-                            level = user.level
-                            amount = user.amount
-
-                            queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
-                            queue_user.time = int(time.time())
-
-                            
-                            channel = await self.bot.fetch_channel(payload.channel_id)
-                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                            await message.remove_reaction(str(payload.emoji), payload.member)
-                            await message.delete()
-                            await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
-                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                            await session.delete(user)
-                            await session.flush()
+                        session = sessionmaker()
+                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                        user.time = int(time.time())
+                        level = user.level
+                        amount = user.amount
+                        queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
+                        queue_user.time = int(time.time())
+                        await session.commit()
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
+                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                        await session.delete(user)
+                        await session.commit()
+                        await session.close()
                     elif str(payload.emoji) == '❌':
-                        async with sessionmaker.begin() as session:
-                            channel = await self.bot.fetch_channel(payload.channel_id)
-                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                            await message.remove_reaction(str(payload.emoji), payload.member)
-                            await message.delete()
-                            user = (await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id)))
-                            amount = user.amount
-                            level = user.level
-
-                            User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
-                            await session.delete(User_leave)
-                            await session.flush()
+                        session = sessionmaker()
+                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await message.remove_reaction(str(payload.emoji), payload.member)
+                        await message.delete()
+                        user = (await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id)))
+                        amount = user.amount
+                        level = user.level
+                        User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
+                        await session.delete(User_leave)
+                        await session.commit()
                         await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
-                        async with sessionmaker.begin() as session:
-                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                            await session.delete(user)
-                            await session.flush()
+                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                        await session.delete(user)
+                        await session.commit()
+                        await session.close()
                     elif(int(payload.member.id) != self.bot.user.id):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)

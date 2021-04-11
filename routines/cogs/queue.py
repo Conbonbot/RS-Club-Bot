@@ -152,7 +152,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     add_temp = Temp(server_id=queue.server_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                     session.add(add_temp)
                     await session.commit()
-            elif minutes >= queue.length + 5: # TODO: This is broken, fix it
+            elif minutes >= queue.length + 5:
                     User_leave = (await session.get(Queue, (queue.server_id, queue.user_id, queue.amount, queue.level)))
                     await session.delete(User_leave)
                     await session.commit()
@@ -358,7 +358,7 @@ class RSQueue(commands.Cog, name='Queue'):
                             if await self.amount(self.rs_channel[channel]) == 4:
                                 LOGGER.debug("Queue is 4/4, remove everyone")
                                 # Print out the queue
-                                people = await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel])).scalars()
+                                people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                                 string_people = ""
                                 print_people = []
                                 LOGGER.debug(people)
@@ -626,7 +626,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     if await self.amount(self.rs_channel[channel]) == 4:
                         LOGGER.debug("Queue is 4/4, remove everyone")
                         # Print out the queue
-                        people = await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel])).scalars()
+                        people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                         string_people = ""
                         print_people = []
                         LOGGER.debug(people)
