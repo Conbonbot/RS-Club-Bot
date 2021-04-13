@@ -341,6 +341,8 @@ class RSQueue(commands.Cog, name='Queue'):
                             has_right_role = True
                             break
                 if has_right_role:
+                    if length >= 5 and length <= 11:
+                        length = 60
                     # check if adding amount would overfill the queue
                     queue_status = await self.amount(self.rs_channel[channel])
                     if int(queue_status) + count > 4:
@@ -614,6 +616,8 @@ class RSQueue(commands.Cog, name='Queue'):
                 #    has_right_role = True
             if has_right_role:
                 # This is where the fun begins
+                if length >= 5 and length <= 11:
+                        length = 60
                 session = sessionmaker()
                 data = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars().all()
                 if len(data) == 0:  # They weren't found in the database, add them
