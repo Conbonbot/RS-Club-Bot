@@ -176,24 +176,23 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            session = sessionmaker()
-            if mod in self.current_mods:
-                # Check to see if they already are in the data table
-                results = (await session.get(Data, ctx.author.id))
-                if results is None:
-                    mod_insert = Data(**{'user_id': ctx.author.id, mod: True})
-                    session.add(mod_insert)
+            async with sessionmaker() as session:
+                if mod in self.current_mods:
+                    # Check to see if they already are in the data table
+                    results = (await session.get(Data, ctx.author.id))
+                    if results is None:
+                        mod_insert = Data(**{'user_id': ctx.author.id, mod: True})
+                        session.add(mod_insert)
+                    else:
+                        user_mods = (await session.get(Data, ctx.author.id))
+                        setattr(user_mods, mod, True)
+                    await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:
-                    user_mods = (await session.get(Data, ctx.author.id))
-                    setattr(user_mods, mod, True)
-                await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
-            else:
-                str_mods = ""
-                for str_mod in self.current_mods:
-                    str_mods += "**" + str_mod + "**" + ", "
-                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
-            await session.commit()
-            await session.close()
+                    str_mods = ""
+                    for str_mod in self.current_mods:
+                        str_mods += "**" + str_mod + "**" + ", "
+                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+                await session.commit()
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -209,18 +208,17 @@ class RSRole(commands.Cog, name='Role'):
                 right_channel = True
                 channel = club_channel
         if right_channel:
-            session = sessionmaker()
-            if mod in self.current_mods:
-                user_mods = (await session.get(Data, ctx.author.id))
-                setattr(user_mods, mod, False)
-                await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
-            else:
-                str_mods = ""
-                for str_mod in self.current_mods:
-                    str_mods += "**" + str_mod + "**" + ", "
-                await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
-            await session.commit()
-            await session.close()
+            async with sessionmaker() as session:
+                if mod in self.current_mods:
+                    user_mods = (await session.get(Data, ctx.author.id))
+                    setattr(user_mods, mod, False)
+                    await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
+                else:
+                    str_mods = ""
+                    for str_mod in self.current_mods:
+                        str_mods += "**" + str_mod + "**" + ", "
+                    await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
+                await session.commit()
         else:
             msg = await ctx.send(f"{ctx.author.mention}, this command can only be run in #bot-spam")
             await asyncio.sleep(15)
@@ -248,7 +246,7 @@ class RSRole(commands.Cog, name='Role'):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
-                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
                             if(str(role).startswith("rs")):
@@ -271,7 +269,7 @@ class RSRole(commands.Cog, name='Role'):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
-                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue hits 3/4.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                     else:
                         for role in payload.member.roles:
                             print(role)
@@ -295,7 +293,7 @@ class RSRole(commands.Cog, name='Role'):
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
                         await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
                         channel = await self.bot.fetch_channel(payload.channel_id)
-                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to suppress this pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                        welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to hide the hide the rs channels, type !rsc to hide them, and type !rsc to see them again.")
                     else:
                         for role in payload.member.roles:
                             print(role)
@@ -312,40 +310,38 @@ class RSRole(commands.Cog, name='Role'):
             if len(results.all()) != 0:
                 if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
                     if str(payload.emoji) == '✅':
-                        session = sessionmaker()
-                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                        user.time = int(time.time())
-                        level = user.level
-                        amount = user.amount
-                        queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
-                        queue_user.time = int(time.time())
-                        await session.commit()
-                        channel = await self.bot.fetch_channel(payload.channel_id)
-                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                        await message.remove_reaction(str(payload.emoji), payload.member)
-                        await message.delete()
-                        await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
-                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                        await session.delete(user)
-                        await session.commit()
-                        await session.close()
+                        async with sessionmaker() as session:
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            user.time = int(time.time())
+                            level = user.level
+                            amount = user.amount
+                            queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
+                            queue_user.time = int(time.time())
+                            await session.commit()
+                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            await message.remove_reaction(str(payload.emoji), payload.member)
+                            await message.delete()
+                            await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            await session.delete(user)
+                            await session.commit()
                     elif str(payload.emoji) == '❌':
-                        session = sessionmaker()
-                        channel = await self.bot.fetch_channel(payload.channel_id)
-                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                        await message.remove_reaction(str(payload.emoji), payload.member)
-                        await message.delete()
-                        user = (await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id)))
-                        amount = user.amount
-                        level = user.level
-                        User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
-                        await session.delete(User_leave)
-                        await session.commit()
-                        await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
-                        user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
-                        await session.delete(user)
-                        await session.commit()
-                        await session.close()
+                        async with sessionmaker() as session:
+                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            await message.remove_reaction(str(payload.emoji), payload.member)
+                            await message.delete()
+                            user = (await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id)))
+                            amount = user.amount
+                            level = user.level
+                            User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
+                            await session.delete(User_leave)
+                            await session.commit()
+                            await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
+                            user = await session.get(Temp, (payload.guild_id, payload.user_id, payload.message_id))
+                            await session.delete(user)
+                            await session.commit()
                     elif(int(payload.member.id) != self.bot.user.id):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)

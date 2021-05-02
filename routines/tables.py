@@ -40,6 +40,7 @@ class Data(Base):
 class Temp(Base):
     __tablename__ = 'temp'
     server_id = Column(BigInteger, primary_key=True)
+    channel_id = Column(BigInteger, primary_key=True)
     user_id = Column(BigInteger, primary_key=True)
     message_id = Column(BigInteger, primary_key=True)
     amount = Column(SmallInteger)
