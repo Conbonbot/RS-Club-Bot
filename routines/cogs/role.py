@@ -112,11 +112,9 @@ class RSRole(commands.Cog, name='Role'):
     @commands.group(invoke_without_command=True)
     async def rsmod(self, ctx):
         right_channel = False
-        channel = ""
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-                channel = club_channel
         if right_channel:
             extras = {
                 'croid': discord.utils.get(self.bot.emojis, name='croid'),
@@ -170,11 +168,9 @@ class RSRole(commands.Cog, name='Role'):
     @rsmod.group()
     async def on(self, ctx, mod):
         right_channel = False
-        channel = ""
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-                channel = club_channel
         if right_channel:
             async with sessionmaker() as session:
                 if mod in self.current_mods:
@@ -202,11 +198,9 @@ class RSRole(commands.Cog, name='Role'):
     @rsmod.group()
     async def off(self, ctx, mod):
         right_channel = False
-        channel = ""
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-                channel = club_channel
         if right_channel:
             async with sessionmaker() as session:
                 if mod in self.current_mods:

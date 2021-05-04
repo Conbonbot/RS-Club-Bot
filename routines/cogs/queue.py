@@ -156,7 +156,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
                         #ctx = await self.bot.get_context(message.id)
                         #await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                elif minutes >= queue.length + 2:
+                elif minutes >= queue.length + 5:
                         User_leave = (await session.get(Queue, (queue.server_id, queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
@@ -206,6 +206,11 @@ class RSQueue(commands.Cog, name='Queue'):
         nick = f"[{' '.join(corp)}] " + name
         await member.edit(nick=nick)
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
+
+    @commands.command()
+    async def test(self, ctx):
+        for data in inspect(Data).c:
+            await ctx.send(data)
 
 
     @commands.command()
