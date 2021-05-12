@@ -184,7 +184,6 @@ class RSQueue(commands.Cog, name='Queue'):
     async def run_check(self, ctx):
         await self.check_people.__call__()
         message = await ctx.send("Ran background task check_people()")
-        await ctx.message.delete()
         await asyncio.sleep(5)
         await ctx.message.delete()
         await message.delete()
