@@ -15,6 +15,7 @@ from sqlalchemy import and_
 from sqlalchemy.sql.expression import insert
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy import inspect
+from sqlalchemy import event
 
 from bot import LOGGER
 from bot import TESTING
@@ -112,6 +113,9 @@ class RSQueue(commands.Cog, name='Queue'):
 
 
 
+
+
+
     async def amount(self, level):
         async with sessionmaker.begin() as session:
             people = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
@@ -128,13 +132,12 @@ class RSQueue(commands.Cog, name='Queue'):
             person = (await session.get(Queue, (server_id, user_id, amount, level)))
             data =  int((time.time() - int(person.time)) / 60)
             return data
-                
-
-
 
 
     @tasks.loop(minutes=1.0)
     async def check_people(self):
+        #channel = await self.bot.fetch_channel(805963717921079346)
+        #await channel.send("check_people loop")
         # This command will run every minute, and check if someone has been in a queue for over n minutes
         LOGGER.debug("Attempting to check the time")
         async with sessionmaker() as session:
@@ -174,6 +177,18 @@ class RSQueue(commands.Cog, name='Queue'):
                         await session.commit()
             await session.commit()
 
+
+    
+    @commands.command()
+    @commands.has_role("mod")
+    async def run_check(self, ctx):
+        await self.check_people.__call__()
+        message = await ctx.send("Ran background task check_people()")
+        await ctx.message.delete()
+        await asyncio.sleep(5)
+        await ctx.message.delete()
+        await message.delete()
+
     @commands.command()
     @commands.has_role("mod")
     async def clear_cache(self, ctx):
@@ -206,11 +221,6 @@ class RSQueue(commands.Cog, name='Queue'):
         nick = f"[{' '.join(corp)}] " + name
         await member.edit(nick=nick)
         await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
-
-    @commands.command()
-    async def test(self, ctx):
-        for data in inspect(Data).c:
-            await ctx.send(data)
 
 
     @commands.command()
