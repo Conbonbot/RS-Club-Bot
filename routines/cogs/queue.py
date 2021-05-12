@@ -177,6 +177,9 @@ class RSQueue(commands.Cog, name='Queue'):
                         await session.commit()
             await session.commit()
 
+    @check_people.before_loop
+    async def before_check(self):
+        await engine.dispose()
 
     
     @commands.command()
