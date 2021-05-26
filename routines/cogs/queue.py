@@ -17,6 +17,8 @@ from sqlalchemy.sql.selectable import Select
 from sqlalchemy import inspect
 from sqlalchemy import event
 
+from random import random
+
 from bot import LOGGER
 from bot import TESTING
 
@@ -133,12 +135,15 @@ class RSQueue(commands.Cog, name='Queue'):
             data =  int((time.time() - int(person.time)) / 60)
             return data
 
+    @tasks.loop(hours=1.0)
+    async def remove_temp(self):
+        pass
+        # TODO: Make this remove all extra stuff in the Temp database
+        
+
 
     @tasks.loop(minutes=1.0)
     async def check_people(self):
-        #channel = await self.bot.fetch_channel(805963717921079346)
-        #await channel.send("check_people loop")
-        # This command will run every minute, and check if someone has been in a queue for over n minutes
         LOGGER.debug("Attempting to check the time")
         async with sessionmaker() as session:
             results = (await session.execute(select(Queue))).scalars()
@@ -176,10 +181,17 @@ class RSQueue(commands.Cog, name='Queue'):
                         await session.execute(delete(Temp).where(conditions))
                         await session.commit()
             await session.commit()
+        
 
     @check_people.before_loop
     async def before_check(self):
         await engine.dispose()
+        # TODO: Test this out compared to making a NullPool engine
+    
+    @check_people.after_loop
+    async def after_check(self):
+        channel = await self.bot.fetch_channel(846890463260311582)
+        await channel.send(f"Ran background task at {int(time.time()/60)} minutes")
 
     
     @commands.command()

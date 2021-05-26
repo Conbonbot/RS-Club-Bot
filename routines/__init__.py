@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.sql.functions import char_length
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.pool import NullPool
 from sqlalchemy.engine.url import URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker as maker
@@ -20,8 +21,11 @@ postgres_URL = URL.create('postgresql+asyncpg',
                           host=os.getenv('HOST'))
 
 
-engine = create_async_engine(postgres_URL, echo=True)
+engine = create_async_engine(postgres_URL, echo=True, poolclass=NullPool)
+#engine = create_async_engine(postgres_URL, echo=True)
 sessionmaker = maker(bind=engine, expire_on_commit=False, class_=AsyncSession)
+
+# QueuePool engine is faster than a NullPool engine
 
 
 class Routine(object):
