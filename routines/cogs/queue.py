@@ -91,6 +91,8 @@ class RSQueue(commands.Cog, name='Queue'):
     def __init__(self, bot):
         self.bot = bot
         self.index = 0
+        self.success = 0
+        self.error = 0
         self.check_people.start()
         self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
         self.rs_channel = {
@@ -135,16 +137,7 @@ class RSQueue(commands.Cog, name='Queue'):
             data =  int((time.time() - int(person.time)) / 60)
             return data
 
-    @tasks.loop(hours=1.0)
-    async def remove_temp(self):
-        pass
-        # TODO: Make this remove all extra stuff in the Temp database
-        
-
-
-    @tasks.loop(minutes=1.0)
-    async def check_people(self):
-        LOGGER.debug("Attempting to check the time")
+    async def check(self):
         async with sessionmaker() as session:
             results = (await session.execute(select(Queue))).scalars()
             for queue in results:
@@ -183,15 +176,34 @@ class RSQueue(commands.Cog, name='Queue'):
             await session.commit()
         
 
-    @check_people.before_loop
-    async def before_check(self):
-        await engine.dispose()
-        # TODO: Test this out compared to making a NullPool engine
-    
-    @check_people.after_loop
-    async def after_check(self):
-        channel = await self.bot.fetch_channel(846890463260311582)
-        await channel.send(f"Ran background task at {int(time.time()/60)} minutes")
+
+    @tasks.loop(minutes=1.0)
+    async def check_people(self):
+        try:
+            await self.check()
+        except Exception as e:
+            self.error, self.index = self.error+1, self.index+1
+            check_embed = discord.Embed(
+                title="Failure",
+                color=discord.Color.red()
+            )
+            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            check_embed.add_field(name="Exception", value=f"{e}")
+            check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
+        else:
+            self.success, self.index = self.success+1, self.index+1
+            check_embed = discord.Embed(
+                title="Success",
+                color=discord.Color.green()
+            )
+            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
+        finally:
+            channel = await self.bot.fetch_channel(849504307707117578)
+            await channel.send(embed=check_embed)
+            
+
+
 
     
     @commands.command()

@@ -21,11 +21,10 @@ postgres_URL = URL.create('postgresql+asyncpg',
                           host=os.getenv('HOST'))
 
 
-engine = create_async_engine(postgres_URL, echo=True, poolclass=NullPool)
-#engine = create_async_engine(postgres_URL, echo=True)
+#engine = create_async_engine(postgres_URL, echo=True, poolclass=NullPool)
+engine = create_async_engine(postgres_URL, echo=True)
 sessionmaker = maker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
-# QueuePool engine is faster than a NullPool engine
 
 
 class Routine(object):
