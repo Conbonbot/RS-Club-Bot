@@ -36,6 +36,7 @@ class Data(Base):
     dart = Column(Boolean)
     solo = Column(Boolean)
     solo2 = Column(Boolean)
+    mass = Column(Boolean)
 
 class Temp(Base):
     __tablename__ = 'temp'

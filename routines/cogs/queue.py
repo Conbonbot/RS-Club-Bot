@@ -5,6 +5,7 @@ from aiosqlite.core import LOG
 
 import discord
 import sqlite3
+import psycopg2
 
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -94,7 +95,6 @@ class RSQueue(commands.Cog, name='Queue'):
         self.success = 0
         self.error = 0
         self.check_people.start()
-        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
         self.rs_channel = {
             "rs5-club": 5,
             "rs6-club": 6,
@@ -182,26 +182,48 @@ class RSQueue(commands.Cog, name='Queue'):
         try:
             await self.check()
         except Exception as e:
-            self.error, self.index = self.error+1, self.index+1
-            check_embed = discord.Embed(
-                title="Failure",
-                color=discord.Color.red()
-            )
-            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-            check_embed.add_field(name="Exception", value=f"{e}")
-            check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
+            if not TESTING:
+                self.error, self.index = self.error+1, self.index+1
+                check_embed = discord.Embed(
+                    title="Failure",
+                    color=discord.Color.red()
+                )
+                check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+                check_embed.add_field(name="Exception", value=f"{e}")
+                check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
         else:
-            self.success, self.index = self.success+1, self.index+1
-            check_embed = discord.Embed(
-                title="Success",
-                color=discord.Color.green()
-            )
-            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-            check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
+            if not TESTING:
+                self.success, self.index = self.success+1, self.index+1
+                check_embed = discord.Embed(
+                    title="Success",
+                    color=discord.Color.green()
+                )
+                check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+                check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
         finally:
-            channel = await self.bot.fetch_channel(849504307707117578)
-            await channel.send(embed=check_embed)
-            
+            if not TESTING:
+                channel = await self.bot.fetch_channel(858406227523403776)
+                await channel.send(embed=check_embed)
+
+    #TODO: temp command, remove after using
+    @commands.command()
+    @commands.has_role("mod")
+    async def add_mass(self, ctx):
+        with psycopg2.connect(host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')) as conn:
+            cur = conn.cursor()
+            cur.execute(f'ALTER TABLE data ADD COLUMN mass BOOLEAN DEFAULT FALSE;')
+            conn.commit()
+            cur.close()
+        message = await ctx.send("mass battery added to rsmod")
+        await asyncio.sleep(5)
+        await ctx.message.delete()
+        await message.delete()
+
+    # TODO: testing command
+    @commands.command()
+    async def columns(self, ctx):
+        mods = [(str(column))[5:] for column in inspect(Data).c]
+        mods = mods[1:]
 
 
 
@@ -754,8 +776,11 @@ class RSQueue(commands.Cog, name='Queue'):
             'dart': discord.utils.get(self.bot.emojis, name='dart'),
             'battery': discord.utils.get(self.bot.emojis, name='battery'),
             'solo': discord.utils.get(self.bot.emojis, name='solo'),
-            'solo2': discord.utils.get(self.bot.emojis, name='solo2')
+            'solo2': discord.utils.get(self.bot.emojis, name='solo2'),
+            'mass': discord.utils.get(self.bot.emojis, name='mass')
         }
+        mods = [(str(column))[5:] for column in inspect(Data).c]
+        mods = mods[1:]
         queue_embed = discord.Embed(color=discord.Color.red())
         async with sessionmaker.begin() as session:
             people = (await session.execute(select(Queue).where(Queue.level == level))).scalars()
@@ -776,10 +801,10 @@ class RSQueue(commands.Cog, name='Queue'):
                     temp = ""
                     LOGGER.debug(f"Here is users_mods: {users_mods}")
                     if users_mods is not None:
-                        for mod in self.current_mods:
+                        for mod in mods:
                             #await ctx.send(f"Mod: {mod} {getattr(users_mods, mod)}")
                             if(getattr(users_mods, mod) == True):
-                                temp += " " + (str(extras[self.current_mods[i]]))
+                                temp += " " + (str(extras[mods[i]]))
                             i += 1
                     rsmods.append(temp)
                 str_people = ""

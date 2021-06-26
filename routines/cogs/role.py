@@ -16,6 +16,7 @@ from sqlalchemy import update
 from sqlalchemy import delete
 from sqlalchemy import and_
 from sqlalchemy.sql.selectable import Select
+from sqlalchemy import inspect
 
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
@@ -54,7 +55,7 @@ class RSRole(commands.Cog, name='Role'):
             "rs11-club": 11,
             "bot-spam": -1
         }
-        self.current_mods = ["croid", "influence", "nosanc", "notele", "rse", "suppress", "unity", "veng", "barrage", "laser", "dart", "battery", "solo", "solo2"]
+        
 
 
 
@@ -69,45 +70,45 @@ class RSRole(commands.Cog, name='Role'):
 
     @commands.command()
     async def role(self, ctx):
-        # role_embed = discord.Embed(
-        #    color = discord.Color.green()
-        # )
-        # role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        # message = await ctx.send(embed=role_embed)
-        # for emoji in self.emojis.keys():
-        #    await message.add_reaction(emoji)
-        # await ctx.message.delete()
-        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        await ctx.send(
-            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        role_embed = discord.Embed(
+           color = discord.Color.green()
+        )
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        message = await ctx.send(embed=role_embed)
+        for emoji in self.emojis.keys():
+           await message.add_reaction(emoji)
+        await ctx.message.delete()
+        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        #await ctx.send(
+        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_34(self, ctx):
-        # role_embed = discord.Embed(
-        #    color = discord.Color.red()
-        # )
-        # role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        # message = await ctx.send(embed=role_embed)
-        # for emoji in self.emojis.keys():
-        #    await message.add_reaction(emoji
-        # await ctx.message.delete()
-        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        await ctx.send(
-            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        role_embed = discord.Embed(
+           color = discord.Color.red()
+        )
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        message = await ctx.send(embed=role_embed)
+        for emoji in self.emojis.keys():
+           await message.add_reaction(emoji)
+        await ctx.message.delete()
+        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        #await ctx.send(
+        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_silent(self, ctx):
-        # role_embed = discord.Embed(
-        #    color = discord.Color.dark_gray()
-        # )
-        # role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        # message = await ctx.send(embed=role_embed)
-        # for emoji in self.emojis.keys():
-        #    await message.add_reaction(emoji)
-        # await ctx.message.delete()
-        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        await ctx.send(
-            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        role_embed = discord.Embed(
+           color = discord.Color.dark_gray()
+        )
+        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        message = await ctx.send(embed=role_embed)
+        for emoji in self.emojis.keys():
+           await message.add_reaction(emoji)
+        await ctx.message.delete()
+        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        #await ctx.send(
+        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.group(invoke_without_command=True)
     async def rsmod(self, ctx):
@@ -130,7 +131,8 @@ class RSRole(commands.Cog, name='Role'):
                 'dart': discord.utils.get(self.bot.emojis, name='dart'),
                 'battery': discord.utils.get(self.bot.emojis, name='battery'),
                 'solo': discord.utils.get(self.bot.emojis, name='solo'),
-                'solo2': discord.utils.get(self.bot.emojis, name='solo2')
+                'solo2': discord.utils.get(self.bot.emojis, name='solo2'),
+                'mass': discord.utils.get(self.bot.emojis, name='mass'),
             }
             # LOGGER.debug(self.extras)
             LOGGER.debug(str(extras['croid']))
@@ -145,14 +147,16 @@ class RSRole(commands.Cog, name='Role'):
             extra_embed.add_field(name=str(extras['rse']), value=f"RSE: Will provide RSE.", inline=False)
             extra_embed.add_field(name=str(extras['veng']), value=f"Veng: Vengeance present on Battleship(s).",inline=False)
             extra_embed.add_field(name=str(extras['notele']),value=f"Notele: No Teleport on either Battleship or Transport.", inline=False)
-            extra_embed.add_field(name=str(extras['barrage']),value=f"Barrage: Barrage, best left alone, and if you help only take out capital ships.",inline=False)
             extra_embed.add_field(name=str(extras['suppress']), value=f"Suppress: Suppress present on Battleship(s).",inline=False)
             extra_embed.add_field(name=str(extras['unity']), value=f"Unity: Unity present on Battleship(s).", inline=False)
-            extra_embed.add_field(name=str(extras['laser']), value=f"Laser: Laser present on Battleship(s).", inline=False)
             extra_embed.add_field(name=str(extras['battery']), value=f"Battery: Battery present on Battleship(s).",inline=False)
+            extra_embed.add_field(name=str(extras['laser']), value=f"Laser: Laser present on Battleship(s).", inline=False)
+            extra_embed.add_field(name=str(extras['mass']), value=f"Mass: Mass Battery present on Battleship(s).",inline=False)
+            extra_embed.add_field(name=str(extras['barrage']),value=f"Barrage: Barrage, best left alone, and if you help only take out capital ships.",inline=False)
             extra_embed.add_field(name=str(extras['dart']), value=f"Dart: Dart launcher present on Battleship(s).",inline=False)
             extra_embed.add_field(name=str(extras['solo']),value=f"solo: Can solo one planet without any help from others.", inline=False)
             extra_embed.add_field(name=str(extras['solo2']), value=f"solo2: Can solo two planets without any help.",inline=False)
+            
 
             await ctx.send(embed=extra_embed)
             await ctx.send(
@@ -167,13 +171,15 @@ class RSRole(commands.Cog, name='Role'):
 
     @rsmod.group()
     async def on(self, ctx, mod):
+        mods = [(str(column))[5:] for column in inspect(Data).c]
+        mods = mods[1:]
         right_channel = False
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
         if right_channel:
             async with sessionmaker() as session:
-                if mod in self.current_mods:
+                if mod in mods:
                     # Check to see if they already are in the data table
                     results = (await session.get(Data, ctx.author.id))
                     if results is None:
@@ -185,7 +191,7 @@ class RSRole(commands.Cog, name='Role'):
                     await ctx.send(f"{ctx.author.mention}, {mod} has been added. When you enter a queue, you'll see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:
                     str_mods = ""
-                    for str_mod in self.current_mods:
+                    for str_mod in mods:
                         str_mods += "**" + str_mod + "**" + ", "
                     await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
                 await session.commit()
@@ -197,19 +203,21 @@ class RSRole(commands.Cog, name='Role'):
 
     @rsmod.group()
     async def off(self, ctx, mod):
+        mods = [(str(column))[5:] for column in inspect(Data).c]
+        mods = mods[1:]
         right_channel = False
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-        if right_channel:
+        if right_channel:   
             async with sessionmaker() as session:
-                if mod in self.current_mods:
+                if mod in mods:
                     user_mods = (await session.get(Data, ctx.author.id))
                     setattr(user_mods, mod, False)
                     await ctx.send(f"{ctx.author.mention}, {mod} has been removed. When you enter a queue, you'll no longer see {str(discord.utils.get(self.bot.emojis, name=f'{mod}'))} next to your name")
                 else:
                     str_mods = ""
-                    for str_mod in self.current_mods:
+                    for str_mod in mods:
                         str_mods += "**" + str_mod + "**" + ", "
                     await ctx.send(f"{mod} not found in list, current available mods: {str_mods[:-2]}")
                 await session.commit()
