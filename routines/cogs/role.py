@@ -70,45 +70,45 @@ class RSRole(commands.Cog, name='Role'):
 
     @commands.command()
     async def role(self, ctx):
-        role_embed = discord.Embed(
-           color = discord.Color.green()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-           await message.add_reaction(emoji)
-        await ctx.message.delete()
-        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        #await ctx.send(
-        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        #role_embed = discord.Embed(
+        #   color = discord.Color.green()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged everytime someone joins a queue, and ❌ to remove all RS Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #   await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        await ctx.send(
+            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_34(self, ctx):
-        role_embed = discord.Embed(
-           color = discord.Color.red()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-           await message.add_reaction(emoji)
-        await ctx.message.delete()
-        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        #await ctx.send(
-        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        #role_embed = discord.Embed(
+        #   color = discord.Color.red()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged when a queue is 3/4, and ❌ to remove all RS 3/4 Roles", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #   await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        await ctx.send(
+            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.command()
     async def role_silent(self, ctx):
-        role_embed = discord.Embed(
-           color = discord.Color.dark_gray()
-        )
-        role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
-        message = await ctx.send(embed=role_embed)
-        for emoji in self.emojis.keys():
-           await message.add_reaction(emoji)
-        await ctx.message.delete()
-        #channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
-        #await ctx.send(
-        #    f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
+        #role_embed = discord.Embed(
+        #   color = discord.Color.dark_gray()
+        #)
+        #role_embed.add_field(name="React below to recieve the corresponding RS Role and be pinged ONLY when you've joined a queue and it hits 4/4 (and ❌ to remove all RS Silent Roles)", value="Current Levels: 6️⃣, 7️⃣, 8️⃣, 9️⃣, 🔟, ⏸️, ❌")
+        #message = await ctx.send(embed=role_embed)
+        #for emoji in self.emojis.keys():
+        #   await message.add_reaction(emoji)
+        #await ctx.message.delete()
+        channel = await self.bot.fetch_channel(ROLE_CHANNEL_ID)
+        await ctx.send(
+            f"If you want your roles changes, check out this channel and react to how you'd like to be pinged: {channel.mention}")
 
     @commands.group(invoke_without_command=True)
     async def rsmod(self, ctx):
@@ -235,7 +235,7 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
-        if(payload.message_id == 808782626612838420):
+        if(payload.message_id == 858406627220258836): # Regular roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -258,7 +258,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808782649946669127):
+        elif(payload.message_id == 858406639621898250): # 3/4 roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -282,7 +282,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 808960926517559306): 
+        elif(payload.message_id == 858406648041439282): # silent roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
