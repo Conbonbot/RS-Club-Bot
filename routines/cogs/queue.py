@@ -205,28 +205,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 channel = await self.bot.fetch_channel(858406227523403776)
                 await channel.send(embed=check_embed)
 
-    #TODO: temp command, remove after using
-    @commands.command()
-    @commands.has_role("mod")
-    async def add_mass(self, ctx):
-        with psycopg2.connect(host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')) as conn:
-            cur = conn.cursor()
-            cur.execute(f'ALTER TABLE data ADD COLUMN mass BOOLEAN DEFAULT FALSE;')
-            conn.commit()
-            cur.close()
-        message = await ctx.send("mass battery added to rsmod")
-        await asyncio.sleep(5)
-        await ctx.message.delete()
-        await message.delete()
-
-    # TODO: testing command
-    @commands.command()
-    async def columns(self, ctx):
-        mods = [(str(column))[5:] for column in inspect(Data).c]
-        mods = mods[1:]
-
-
-
     
     @commands.command()
     @commands.has_role("mod")
