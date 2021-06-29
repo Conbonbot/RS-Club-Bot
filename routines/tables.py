@@ -46,3 +46,23 @@ class Temp(Base):
     message_id = Column(BigInteger, primary_key=True)
     amount = Column(SmallInteger)
     level = Column(SmallInteger)
+
+class ExternalServer(Base):
+    __tablename__ = 'externalserver'
+    server_id = Column(BigInteger, primary_key=True)
+    channel_id = Column(BigInteger)
+    webhook = Column(Text)
+    max_rs = Column(SmallInteger)
+    global_chat = Column(Boolean)
+
+class ExternalUsers(Base):
+    __tablename__= 'externalusers'
+    server_id = Column(BigInteger, primary_key=True)
+    user_id = Column(BigInteger, primary_key=True)
+    rs_level = Column(SmallInteger, primary_key=True)
+    pings = Column(SmallInteger)
+
+
+
+    
+    

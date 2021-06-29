@@ -204,7 +204,6 @@ class RSQueue(commands.Cog, name='Queue'):
             if not TESTING:
                 channel = await self.bot.fetch_channel(858406227523403776)
                 await channel.send(embed=check_embed)
-
     
     @commands.command()
     @commands.has_role("mod")
@@ -321,7 +320,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 if club_channel == str(ctx.message.channel):
                     right_channel = True
                     channel = club_channel
-            if right_channel:
+            if right_channel: 
                 has_right_role = False
                 for role in ctx.author.roles:
                     if str(role)[2:].isnumeric():  # Checks main role (rs#)
@@ -584,7 +583,6 @@ class RSQueue(commands.Cog, name='Queue'):
     async def rs(self, ctx, length=60):
         right_channel = False
         channel = ""
-        add_level = self.rs_channel[str(ctx.message.channel)]
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
