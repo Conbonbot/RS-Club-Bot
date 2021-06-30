@@ -10,12 +10,14 @@ class Help(CommandRoutine):
         @self.bot.group(invoke_without_command=True)
         async def help(ctx, option=None):
             if option is None:
-                await ctx.send("There are multiple sections to the help command, and they can be accessed by adding another parameter to the help command, to specify the group you would like more information on. Below is the current categories to the help command:")
-                await ctx.send("```Roles (their types and how to get them): type `!help roles` (or role/r)```")
-                await ctx.send("```The Queueing System (how to join, leave, add a friend, etc.): type `!help queue` (or q/queues)```")
-                await ctx.send("```Rsmods (showing mods when you enter a queue to alert players what mods are on your ships/whatever else you want them to know): type `!help rsmod` (or rs/rsmods)```")
-                await ctx.send("```External Servers and The Clubs: type `!help external` (or e)```")
-                await ctx.send("```Other useful commands: type `!help other` (or o)```")
+                send = ""
+                send += "There are multiple sections to the help command, and they can be accessed by adding another parameter to the help command, to specify the group you would like more information on. Below is the current categories to the help command:"
+                send += "```Roles (their types and how to get them): type `!help roles` (or role/r)```"
+                send += "```The Queueing System (how to join, leave, add a friend, etc.): type `!help queue` (or q/queues)```"
+                send += "```Rsmods (showing mods when you enter a queue to alert players what mods are on your ships/whatever else you want them to know): type `!help rsmod` (or rs/rsmods)```"
+                send += "```External Servers and The Clubs: type `!help external` (or e)```"
+                send += "```Other useful commands: type `!help other` (or o)```"
+                await ctx.send(send)
             elif option == "roles" or option == "role" or option == "r":
                 role_embed = discord.Embed(
                     title='RS Roles + Pings',
@@ -27,7 +29,6 @@ class Help(CommandRoutine):
                     role_embed.add_field(name=f"Pings (Option 1, #/4)", value=f"React to the [first message] to get pinged EVERYTIME someone joins a queue.")
                     role_embed.add_field(name=f"Pings (Option 2, 3/4)", value=f"React to the [second message] to get pinged ONLY when a queue is 3/4.")
                     role_embed.add_field(name=f"Pings (Option 3, 4/4)", value=f"React to the [third message] to get pinged ONLY when a queue you've joined hits 4/4.")
-
                 else:
                     rs_role_channel = await self.bot.fetch_channel(801610229040939038)
                     role_embed.add_field(name=f"RS Roles", value=f"To start queuing, head over to {rs_role_channel.mention} and select how you'd like to be pinged. There are 3 different options you can select (this is done by reacting to the one of the numbers below each message).", inline=False)
@@ -74,7 +75,7 @@ class Help(CommandRoutine):
                 await ctx.send(embed=other_embed)
             elif option == "external" or option == "e":
                 external_embed = discord.Embed(
-                    title='External',
+                    title='External (Currently in Development)',
                     color=discord.Color.green()
                 )
                 if TESTING:

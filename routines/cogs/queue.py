@@ -26,7 +26,7 @@ from bot import TESTING
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import Queue, Data, Temp
+from routines.tables import Queue, Data, Temp, Stats
 from routines import sessionmaker
 from routines import engine
 
@@ -295,6 +295,35 @@ class RSQueue(commands.Cog, name='Queue'):
             await asyncio.sleep(5)
             await ctx.message.delete()
             await message.delete()
+
+    @commands.command(aliases=["stats", "s"])
+    async def rsstats(self, ctx, name=None):
+        async with sessionmaker() as session:
+            if name is None:
+                users = (await session.execute(select(Stats).where(Stats.user_id == ctx.author.id))).scalars()
+            else:
+                users = (await session.execute(select(Stats).where(Stats.user_id == int(name)))).scalars()
+            stats = {'rs5' : 0, 'rs6' : 0, 'rs7' : 0, 'rs8' : 0, 'rs9' : 0, 'rs10' : 0, 'rs11' : 0}
+            for user in users:
+                stats[f'rs{user.rs_level}'] += 1
+            stats_string = "```RS#  | Amount\n"
+            for i in range(5, 12):
+                if stats[f'rs{i}'] != 0:
+                    stats_string += f"RS{i}" + " " * (int(5)-int(len(f"RS{i}"))) + f"| {stats[f'rs{i}']}\n"
+            stats_string += "```"
+            if name is None:
+                stats_embed = discord.Embed(title=f"RS Stats for {ctx.author.display_name}", description=stats_string, color=discord.Color.green())
+            else:
+                full_user = await self.bot.fetch_user(int(name))
+                stats_embed = discord.Embed(title=f"RS Stats for {full_user.display_name}", description=stats_string, color=discord.Color.green())
+            await ctx.send(embed=stats_embed)
+
+    @commands.command()
+    async def test(self, ctx):
+        await ctx.send(ctx.guild.name)
+        for member in ctx.guild.members:
+            await ctx.send(member.display_name)
+
             
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
@@ -366,6 +395,17 @@ class RSQueue(commands.Cog, name='Queue'):
                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                 await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                 await ctx.send("Meet where?")
+                                # Track RS Stats
+                                async with sessionmaker() as session:
+                                    queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
+                                    for person in queue_people:
+                                        print("TRACKING RS STATS", person)
+                                        # If it was 4/4 and only one person don't track anything
+                                        if person.amount < 4:
+                                            user_enter = Stats(user_id=person.user_id, timestamp=int(time.time()), rs_level=person.level)
+                                            session.add(user_enter)
+                                        pass
+                                    await session.commit()
                                 # Remove everyone from the queue
                                 async with sessionmaker() as session:
                                     queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
@@ -632,6 +672,17 @@ class RSQueue(commands.Cog, name='Queue'):
                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                             await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                             await ctx.send("Meet where?")
+                            # Track RS Stats
+                            async with sessionmaker() as session:
+                                queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
+                                for person in queue_people:
+                                    print("TRACKING RS STATS", person)
+                                    # If it was 4/4 and only one person don't track anything
+                                    if person.amount < 4:
+                                        user_enter = Stats(user_id=person.user_id, timestamp=int(time.time()), rs_level=person.level)
+                                        session.add(user_enter)
+                                    pass
+                                await session.commit()
                             # Remove everyone from the queue
                             queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                             for person in queue_people:

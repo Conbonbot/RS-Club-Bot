@@ -1,11 +1,11 @@
 import itertools
 
-from sqlalchemy.sql.sqltypes import SmallInteger
+from sqlalchemy.sql.sqltypes import SmallInteger, TIMESTAMP
 
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.orm import declarative_base, relationship, backref
 
-from sqlalchemy import (Column, Text, Integer, Boolean, String, BigInteger, SmallInteger)
+from sqlalchemy import (Column, Text, Integer, Boolean, String, BigInteger, SmallInteger, Time)
 
 Base = declarative_base()
 
@@ -62,6 +62,14 @@ class ExternalUsers(Base):
     user_id = Column(BigInteger, primary_key=True)
     rs_level = Column(SmallInteger, primary_key=True)
     pings = Column(SmallInteger)
+
+class Stats(Base):
+    __tablename__= 'stats'
+    user_id = Column(BigInteger, primary_key=True)
+    timestamp = Column(BigInteger, primary_key=True)
+    rs_level = Column(SmallInteger)
+    
+
 
 
 

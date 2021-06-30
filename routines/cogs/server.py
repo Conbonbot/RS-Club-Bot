@@ -27,7 +27,7 @@ from bot import TESTING
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import ExternalServer, ExternalUsers, Queue, Data, Temp
+from routines.tables import ExternalServer, ExternalUsers
 from routines import sessionmaker
 from routines import engine
 
