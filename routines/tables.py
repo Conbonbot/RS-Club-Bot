@@ -50,6 +50,7 @@ class Temp(Base):
 class ExternalServer(Base):
     __tablename__ = 'externalserver'
     server_id = Column(BigInteger, primary_key=True)
+    server_name = Column(Text)
     channel_id = Column(BigInteger)
     webhook = Column(Text)
     max_rs = Column(SmallInteger)

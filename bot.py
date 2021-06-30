@@ -45,7 +45,7 @@ DB_TABLES = [
     'queue(server_id BIGINT, user_id BIGINT, amount SMALLINT, level SMALLINT, time BIGINT, length INTEGER, channel_id BIGINT);',
     'data(server_id BIGINT, user_id BIGINT, croid BOOLEAN DEFAULT FALSE, influence BOOLEAN DEFAULT FALSE, nosanc BOOLEAN DEFAULT FALSE, notele BOOLEAN DEFAULT FALSE, rse BOOLEAN DEFAULT FALSE, suppress BOOLEAN DEFAULT FALSE, unity BOOLEAN DEFAULT FALSE, veng BOOLEAN DEFAULT FALSE,barrage BOOLEAN DEFAULT FALSE, laser BOOLEAN DEFAULT FALSE, battery BOOLEAN DEFAULT FALSE, dart BOOLEAN DEFAULT FALSE, solo BOOLEAN DEFAULT FALSE, solo2 BOOLEAN DEFAULT FALSE, mass BOOLEAN DEFAULT FALSE);',
     'temp(server_id BIGINT, channel_id BIGINT, user_id BIGINT, message_id BIGINT, amount SMALLINT, level SMALLINT);',
-    'externalserver(server_id BIGINT, channel_id BIGINT, webhook TEXT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE);',
+    'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE);',
     'externalusers(server_id BIGINT, user_id BIGINT, rs_level SMALLINT, pings SMALLINT)'
 ]
 

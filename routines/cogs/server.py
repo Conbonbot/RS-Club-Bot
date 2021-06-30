@@ -66,7 +66,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 async with sessionmaker() as session:
                     LOGGER.debug("Adding server to database")
                     webhook = await ctx.channel.create_webhook(name="Global Chat Webhook (The Clubs)")
-                    Server_enter = ExternalServer(server_id=ctx.guild.id, channel_id=ctx.channel.id, webhook=str(webhook.url), max_rs=int(max_rs), global_chat=False)
+                    Server_enter = ExternalServer(server_id=ctx.guild.id, server_name=ctx.guild.name, channel_id=ctx.channel.id, webhook=str(webhook.url), max_rs=int(max_rs), global_chat=False)
                     session.add(Server_enter)
                     await session.commit()
 
@@ -177,20 +177,33 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
         async with sessionmaker() as session:
             total_servers = (await session.execute(select(ExternalServer))).scalars()
             global_active_servers = 0
+            ids = []
+            server_ids_check = []
             for server in total_servers:
+                ids.append(server.channel_id)
+                server_ids_check.append((server.channel_id, server.global_chat))
                 if server.global_chat:
                     global_active_servers += 1
+        # Check if the message was sent from a server with global chat
+        check = False
+        print("SERVER ID STUFF: ", server_ids_check)
+        for server, chat in server_ids_check:
+            if message.channel.id == server:
+                if chat:
+                    check = True
         print("GLOBAL ACTIVE SERVERS:", global_active_servers)
-        if global_active_servers > 1:
+        if global_active_servers > 1 and message.channel.id in ids and check:
             if not message.author.bot:
                 if not (message.content.startswith('!') or message.content.startswith('+') or message.content.startswith('-') or message.content.startswith('%')):
+                    print("HELLO THERE")
                     # cut out bot messages and commands
                     async with sessionmaker() as session:
-                        total_servers = (await session.execute(select(ExternalServer))).scalars()
+                        total_servers = (await session.execute(select(ExternalServer).where(ExternalServer.global_chat == True))).scalars()
                         total_stuff = [(server.webhook, server.server_id) for server in total_servers]
-                        print("TOTAL STUFF", total_stuff, message.guild.id) 
+                        print("TOTAL STUFF", total_stuff, message.guild.id)
                         for webhook_url, server_id in total_stuff:
                             if server_id != message.guild.id:
+                                # Send the message with webhooks
                                 user = await self.bot.fetch_user(message.author.id)
                                 async with aiohttp.ClientSession() as session:
                                     webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(session))
@@ -214,14 +227,20 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 await session.commit()
                 total_servers = (await session.execute(select(ExternalServer))).scalars()
                 global_active_servers = 0
+                server_info = []
                 for server in total_servers:
                     if server.global_chat and server.server_id != ctx.guild.id:
                         global_active_servers += 1
+                        server_info.append(server.channel_id)
                 send = "Global chat has been enabled, any messages you send in here will show up in all other servers that have global chat enabled.\n"
                 send += f"There {'are' if global_active_servers != 1 else 'is'} currently {global_active_servers} other {'servers' if global_active_servers != 1 else 'server'} with global chat enabled."
                 await ctx.send(send)
-                new_name = ctx.channel.name + " (enabled)"
-                await ctx.channel.edit(name=new_name)
+                if not str(ctx.channel.name).endswith("enabled"):
+                    new_name = ctx.channel.name + " enabled"
+                    await ctx.channel.edit(name=new_name)
+                for name in server_info:
+                    channel = await self.bot.fetch_channel(name)
+                    await channel.send(f"{ctx.guild.name} has joined global chat, current servers with global chat enabled: {global_active_servers}")
 
         else:
             await ctx.send("global chat is already enabled. To turn it off run `!stopglobal`")
@@ -239,9 +258,26 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 await session.commit()
                 await ctx.send("Global chat has been disabled.")
                 new_name = ctx.channel.name
-                await ctx.channel.edit(name=new_name[:-8])
+                if new_name.endswith("enabled"):
+                    await ctx.channel.edit(name=new_name[:-8])
+                total_servers = (await session.execute(select(ExternalServer))).scalars()
+                server_info = []
+                global_active_servers = 0
+                for server in total_servers:
+                    if server.global_chat and server.server_id != ctx.guild.id:
+                        global_active_servers += 1
+                        server_info.append(server.channel_id)
+                print("SERVER INFO", server_info)
+                for name in server_info:
+                    channel = await self.bot.fetch_channel(name)
+                    await channel.send(f"{ctx.guild.name} has left global chat, current servers with global chat enabled: {global_active_servers}")
         else:
             await ctx.send("global chat is already disabled. To turn it on run `!startglobal`")
+
+    @commands.command()
+    async def rate(self, ctx):
+        print("Rate limit:")
+        print(self.bot.is_ws_ratelimited())
 
 
 
