@@ -47,7 +47,8 @@ DB_TABLES = [
     'temp(server_id BIGINT, channel_id BIGINT, user_id BIGINT, message_id BIGINT, amount SMALLINT, level SMALLINT);',
     'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE);',
     'externalusers(server_id BIGINT, user_id BIGINT, rs_level SMALLINT, pings SMALLINT);',
-    'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT);'
+    'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT, run_id INT);',
+    'event(run_id INT, score SMALLINT, timestamp BIGINT)'
 ]
 
 

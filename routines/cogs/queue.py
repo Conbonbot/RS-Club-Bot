@@ -26,9 +26,10 @@ from bot import TESTING
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import Queue, Data, Temp, Stats
+from routines.tables import Queue, Data, Temp, Stats, Event
 from routines import sessionmaker
 from routines import engine
+import random
 
 # TODO: Use an actual settings file for these and channel/message ids.
 RS_GROUPS = {
@@ -116,9 +117,16 @@ class RSQueue(commands.Cog, name='Queue'):
         self.total_info = []
 
 
-
-
-
+    async def generate_run_id(self):
+        async with sessionmaker.begin() as session:
+            runs = (await session.execute(select(Event))).scalars()
+            ids = []
+            for run in runs:
+                ids.append(run.run_id)
+            rand = random.randrange(1000000, 9000000)
+            while rand in ids:
+                rand = random.randrange(1000000, 9000000)
+            return rand
 
     async def amount(self, level):
         async with sessionmaker.begin() as session:
@@ -128,9 +136,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 count += int(person.amount)
             return count
                 
-                
-                
-
     async def queue_time(self, server_id, user_id, amount, level):
         async with sessionmaker.begin() as session:
             person = (await session.get(Queue, (server_id, user_id, amount, level)))
@@ -157,7 +162,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
                         #ctx = await self.bot.get_context(message.id)
                         #await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
-                elif minutes >= queue.length + 5:
+                elif minutes >= queue.length + 1:
                         User_leave = (await session.get(Queue, (queue.server_id, queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
@@ -295,35 +300,6 @@ class RSQueue(commands.Cog, name='Queue'):
             await asyncio.sleep(5)
             await ctx.message.delete()
             await message.delete()
-
-    @commands.command(aliases=["stats", "s"])
-    async def rsstats(self, ctx, name=None):
-        async with sessionmaker() as session:
-            if name is None:
-                users = (await session.execute(select(Stats).where(Stats.user_id == ctx.author.id))).scalars()
-            else:
-                users = (await session.execute(select(Stats).where(Stats.user_id == int(name)))).scalars()
-            stats = {'rs5' : 0, 'rs6' : 0, 'rs7' : 0, 'rs8' : 0, 'rs9' : 0, 'rs10' : 0, 'rs11' : 0}
-            for user in users:
-                stats[f'rs{user.rs_level}'] += 1
-            stats_string = "```RS#  | Amount\n"
-            for i in range(5, 12):
-                if stats[f'rs{i}'] != 0:
-                    stats_string += f"RS{i}" + " " * (int(5)-int(len(f"RS{i}"))) + f"| {stats[f'rs{i}']}\n"
-            stats_string += "```"
-            if name is None:
-                stats_embed = discord.Embed(title=f"RS Stats for {ctx.author.display_name}", description=stats_string, color=discord.Color.green())
-            else:
-                full_user = await self.bot.fetch_user(int(name))
-                stats_embed = discord.Embed(title=f"RS Stats for {full_user.display_name}", description=stats_string, color=discord.Color.green())
-            await ctx.send(embed=stats_embed)
-
-    @commands.command()
-    async def test(self, ctx):
-        await ctx.send(ctx.guild.name)
-        for member in ctx.guild.members:
-            await ctx.send(member.display_name)
-
             
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
@@ -395,14 +371,22 @@ class RSQueue(commands.Cog, name='Queue'):
                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                 await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                                 await ctx.send("Meet where?")
+                                # Get RS Event data stuff
+                                rs_run_id = await self.generate_run_id()
+                                await ctx.send(f"Your run id is: {rs_run_id}. Once the run is over, have one person from this queue run this command: `!rsinput {rs_run_id} <score>` (without the <>) and it will input the score into the leaderboards")
                                 # Track RS Stats
                                 async with sessionmaker() as session:
+                                    time_data = int(time.time())
+                                    # Add run to event database
+                                    event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
+                                    session.add(event_run)
+                                    await session.commit()
                                     queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                                     for person in queue_people:
                                         print("TRACKING RS STATS", person)
                                         # If it was 4/4 and only one person don't track anything
                                         if person.amount < 4:
-                                            user_enter = Stats(user_id=person.user_id, timestamp=int(time.time()), rs_level=person.level)
+                                            user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
                                             session.add(user_enter)
                                         pass
                                     await session.commit()
@@ -485,6 +469,25 @@ class RSQueue(commands.Cog, name='Queue'):
                                                 await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                                 await ctx.send(f"RS{self.rs_channel[channel]} Ready! {string_people}")
                                                 await ctx.send("Meet where?")
+                                                # Get RS Event data stuff
+                                                rs_run_id = await self.generate_run_id()
+                                                await ctx.send(f"Your run id is: {rs_run_id}. Once the run is over, have one person from this queue run this command: `!rsinput {rs_run_id} <score>` (without the <>) and it will input the score into the leaderboards")
+                                                # Track RS Stats
+                                                async with sessionmaker() as session:
+                                                    time_data = int(time.time())
+                                                    # Add run to event database
+                                                    event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
+                                                    session.add(event_run)
+                                                    await session.commit()
+                                                    queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
+                                                    for person in queue_people:
+                                                        print("TRACKING RS STATS", person)
+                                                        # If it was 4/4 and only one person don't track anything
+                                                        if person.amount < 4:
+                                                            user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
+                                                            session.add(user_enter)
+                                                        pass
+                                                    await session.commit()
                                                 # Remove everyone from the queue
                                                 queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                                                 for person in queue_people:
@@ -672,14 +675,22 @@ class RSQueue(commands.Cog, name='Queue'):
                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                             await ctx.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Ready! {string_people}")
                             await ctx.send("Meet where?")
+                            # Get RS Event data stuff
+                            rs_run_id = await self.generate_run_id()
+                            await ctx.send(f"Your run id is: {rs_run_id}. Once the run is over, have one person from this queue run this command: `!rsinput {rs_run_id} <score>` (without the <>) and it will input the score into the leaderboards")
                             # Track RS Stats
                             async with sessionmaker() as session:
+                                time_data = int(time.time())
+                                # Add run to event database
+                                event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
+                                session.add(event_run)
+                                await session.commit()
                                 queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                                 for person in queue_people:
                                     print("TRACKING RS STATS", person)
                                     # If it was 4/4 and only one person don't track anything
                                     if person.amount < 4:
-                                        user_enter = Stats(user_id=person.user_id, timestamp=int(time.time()), rs_level=person.level)
+                                        user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
                                         session.add(user_enter)
                                     pass
                                 await session.commit()
@@ -688,7 +699,10 @@ class RSQueue(commands.Cog, name='Queue'):
                             for person in queue_people:
                                 await session.delete(person)
                             await session.commit()
-                            rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                            try:
+                                rs_log_channel = await self.bot.fetch_channel(805228742678806599)
+                            except:
+                                rs_log_channel = await self.bot.fetch_channel(806370539148541952)
                             formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
                             await rs_log_channel.send(f"RS{self.rs_channel[str(ctx.message.channel)]} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
                         else:
@@ -760,6 +774,25 @@ class RSQueue(commands.Cog, name='Queue'):
                                             await self.print_queue(ctx, self.rs_channel[str(ctx.message.channel)])
                                             await ctx.send(f"RS{self.rs_channel[channel]} Ready! {string_people}")
                                             await ctx.send("Meet where?")
+                                            # Get RS Event data stuff
+                                            rs_run_id = await self.generate_run_id()
+                                            await ctx.send(f"Your run id is: {rs_run_id}. Once the run is over, have one person from this queue run this command: `!rsinput {rs_run_id} <score>` (without the <>) and it will input the score into the leaderboards")
+                                            # Track RS Stats
+                                            async with sessionmaker() as session:
+                                                time_data = int(time.time())
+                                                # Add run to event database
+                                                event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
+                                                session.add(event_run)
+                                                await session.commit()
+                                                queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
+                                                for person in queue_people:
+                                                    print("TRACKING RS STATS", person)
+                                                    # If it was 4/4 and only one person don't track anything
+                                                    if person.amount < 4:
+                                                        user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
+                                                        session.add(user_enter)
+                                                    pass
+                                                await session.commit()
                                             # Remove everyone from the queue
                                             queue_people = (await session.execute(select(Queue).where(Queue.level == self.rs_channel[channel]))).scalars()
                                             for person in queue_people:

@@ -1,6 +1,6 @@
 import itertools
 
-from sqlalchemy.sql.sqltypes import SmallInteger, TIMESTAMP
+from sqlalchemy.sql.sqltypes import INTEGER, SmallInteger, TIMESTAMP
 
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.orm import declarative_base, relationship, backref
@@ -68,10 +68,14 @@ class Stats(Base):
     user_id = Column(BigInteger, primary_key=True)
     timestamp = Column(BigInteger, primary_key=True)
     rs_level = Column(SmallInteger)
+    run_id = Column(Integer)
+
+class Event(Base):
+    __tablename__ = 'event'
+    run_id = Column(Integer, primary_key=True)
+    score = Column(SmallInteger)
+    timestamp = Column(BigInteger)
     
-
-
-
 
     
     
