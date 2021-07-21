@@ -36,7 +36,10 @@ import requests
 from discord import Webhook, AsyncWebhookAdapter
 import aiohttp
 
-
+if TESTING:
+    clubs_server_id = 805959424081920022
+else:
+    clubs_server_id = 682479756104564775
 
 class ServerJoin(commands.Cog, name='OnServerJoin'):
 
@@ -83,89 +86,19 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=8&scope=bot) and follow the steps")
                     external_embed.add_field(name="First Time Setup", value=f"Run `!connect #` (where `#` is the max rs level of your server), and your server will be connected to The Clubs.")
                     external_embed.add_field(name="Setting up max RS levels", value=f"To change the max RS level of your server, run `!connect #` where `#` is the max rs level of your server.")
-                    external_embed.add_field(name="Users (RS Level + Pings)", value=f"Each user of your discord server will have to run the `!user # %` command which sets up how a user should be pinged when a user enters a specific queue. `#` refers to the user's current rs level, and `%` refers to how the user would like to be notified when someone enters a queue of their rs level. `%` could be `all`, `3/4`, or `silent`.")
-                    external_embed.add_field(name="Users (RS Level + Pings) cont.", value=f"If `%` is set to `all`, the user will be pinged everytime someone joins a queue of their rs level. If `%` is set to `3/4`, they will be pinged when the queue of their rs level is 3/4. If `%` is set to `silent`, they will not be pinged when someone joins a queue of their rs level.")
-                    external_embed.add_field(name="Multiple RS Levels", value=f"If a user wants to be notified when someone joins a queue of a different rs level than their current rs level, run the `!user # %` command again with `#` as whatever rs level they want that is below their current rs level.")
-                    external_embed.add_field(name="Removing Users (RS Level + Pings)", value=f"If a user wants to remove how they'll be pinged for a queue (that they previously wanted to), they can remove it by running `!remove #` where `#` is the rs level they do not want to be notified of.")
-                    external_embed.add_field(name="Seeing RS Level and Pings", value=f"If you want to see what your current rs level + pings are (from the `!user # %` command), run `!current` and it will show you.")
+                    external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!rs_level # @<>` command, where # is the rs level, and @<> is the role that players in that rs level have. If you want to change the role, simply run the command again.")
+                    external_embed.add_field(name="Joining Queues", value=f"Use the `!in #`/`!i #` command to join a queue, where `#` is the rs level you want to join. If `#` is not specified, it will default to your current rs level.")
+                    external_embed.add_field(name="Leaving Queues", value=f"Use the `!out`/`!o` command to leave a queue.")
+                    external_embed.add_field(name="Showing Queues", value=f"Use the `!q #` (where `#` is a rs level) command to show you the queue for rs#")
                     await ctx.send(embed=external_embed)
             else: # They were found in the database, update their max rs level
                 async with sessionmaker() as session:
                     server = (await session.get(ExternalServer, ctx.guild.id))
-                    setattr(server, max_rs, int(max_rs))
-
+                    server.max_rs = int(max_rs)
                     await session.commit()
                     await ctx.send(f"This server has already been connected to The Clubs, but now the max rs level of this server is {max_rs}")
         else:
             await ctx.send(f"The Clubs only support RS 5-11, {max_rs} is outside that range.")
-
-    @commands.command()
-    async def user(self, ctx, rs_level=None, ping=None):
-        if rs_level is None or ping is None:
-            await ctx.send("Please specify the RS Level (5-11) and how you'd like to be pinged (all, 3/4, silent)")
-        else:
-            rs_level = int(rs_level)
-            if rs_level < 5:
-                await ctx.send(f"{rs_level} is below The Clubs minimum rs level of rs5")
-            elif rs_level > 11:
-                await ctx.send(f"RS 11 is currently the highest rs level, you can't be rs{rs_level}")
-            else:
-                if ping == "all" or ping == "3/4" or ping == "silent":
-                    ping_number = 1 if ping == "all" else 2 if ping == "3/4" else 3 if ping == "silent" else ""
-                    # This is where stuff actually happens
-                    async with sessionmaker() as session:
-                        conditions = and_(ExternalUsers.user_id == ctx.author.id, ExternalUsers.rs_level == rs_level)
-                        data = (await session.execute(select(ExternalUsers).where(conditions))).scalars().all()
-                    if len(data) == 0: # Add them to the database
-                        async with sessionmaker() as session:
-                            user = ExternalUsers(server_id=ctx.guild.id, user_id=ctx.author.id, rs_level=rs_level, pings=ping_number)
-                            session.add(user)
-                            await session.commit()
-                            send = f"You'll now be able to join queues up to rs{rs_level}"
-                            if ping_number == 1:
-                                await ctx.send(send + f" and notified everytime someone joins the rs{rs_level} queue")
-                            elif ping_number == 2:
-                                await ctx.send(send + f" and notified when the rs{rs_level} queue hits 3/4")
-                            elif ping_number == 3:
-                                await ctx.send(send + f" but won't get pinged when someone joins")
-                    else: # Update their pings
-                        async with sessionmaker() as session:
-                            User = (await session.get(ExternalUsers, (ctx.guild.id, ctx.author.id, rs_level)))
-                            User.pings = ping_number
-                            await session.commit()
-                            await ctx.send(f"Changed pings for rs{rs_level}, set to {ping}")
-                else:
-                    await ctx.send("Specify `all`, `3/4`, or `silent` on how you'd like to be pinged.")
-
-    @commands.command()
-    async def remove(self, ctx, rs_level=None):
-        if rs_level is None:
-            await ctx.send("Please specify the RS Level")
-        else:
-            rs_level = int(rs_level)
-            if rs_level < 5:
-                await ctx.send(f"{rs_level} is below The Clubs minimum rs level of rs5, you won't have a profile for rs{rs_level}")
-            elif rs_level > 11:
-                await ctx.send(f"RS 11 is currently the highest rs level, you can't be rs{rs_level}")
-            else:       
-                async with sessionmaker() as session:
-                    User_leave = (await session.get(ExternalUsers, (ctx.guild.id, ctx.author.id, rs_level)))
-                    await session.delete(User_leave)
-                    await session.commit()
-                    await ctx.send(f"You'll stop recieving notifications for rs{rs_level} queues")
-
-    @commands.command()
-    async def current(self, ctx):
-        async with sessionmaker() as session:
-            no_data = True
-            conditions = and_(ExternalUsers.server_id == ctx.guild.id, ExternalUsers.user_id == ctx.author.id)
-            total_data = (await session.execute(select(ExternalUsers).where(conditions))).scalars()
-            for data in total_data:
-                no_data = False
-                say = "all" if data.pings == 1 else "3/4" if data.pings == 2 else "silent" if data.pings == 3 else ""
-                await ctx.send(f"RS{data.rs_level}: {say}")
-            if no_data:
-                await ctx.send("No data found, use the `!user` command to recieve notifications for queues")
 
 
     @commands.Cog.listener()
@@ -240,7 +173,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     await ctx.channel.edit(name=new_name)
                 for name in server_info:
                     channel = await self.bot.fetch_channel(name)
-                    await channel.send(f"{ctx.guild.name} has joined global chat, current servers with global chat enabled: {global_active_servers}")
+                    await channel.send(f"{ctx.guild.name} has joined global chat, current (other) servers with global chat enabled: {global_active_servers}")
 
         else:
             await ctx.send("global chat is already enabled. To turn it off run `!stopglobal`")
