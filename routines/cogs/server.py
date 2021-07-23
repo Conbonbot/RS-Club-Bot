@@ -364,16 +364,15 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
         if active_global:
             total_info = []
             total_servers = []
+            club_server_info = ()
             async with sessionmaker() as session:
                 current_talking = (await session.execute(select(Talking))).scalars()
                 for user in current_talking:
                     total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
                     total_servers.append(user.server_id)
+                    if user.server_id == clubs_server_id:
+                        club_server_info = (user.server_id, user.user_id, user.channel_id, user.timestamp)
             total_servers = list(set(total_servers))
-            actual_total_info = []
-            for server in total_servers:
-                if server == total_info[0] and server not in [info[0] for info in actual_total_info]:
-                    actual_total_info.append(total_info)
             # TOTAL INFO -> SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
             # Check if the message was sent from the select people and in the right channel
             if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:
@@ -382,15 +381,16 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         # cut out bot messages and commands
                         async with sessionmaker() as session:
                             total_stuff = []
-                            for data in actual_total_info:
-                                if data[2] in self.club_channels.values():
-                                    rs_level = (await session.get(Stats, (data[1], data[3]))).rs_level
+                            print("Total server data", total_servers)
+                            for data in total_servers:
+                                if data == clubs_server_id:
+                                    print("CLUBS", clubs_server_id)
+                                    rs_level = (await session.get(Stats, (club_server_info[1], club_server_info[3]))).rs_level
                                     clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
-                                    total_stuff.append((os.getenv(clubs_webhook_string), data[0]))
+                                    total_stuff.append((os.getenv(clubs_webhook_string), data))
                                 else:
-                                    print("WEBHOOK DATA", data)
-                                    server = await session.get(ExternalServer, data[0])
-                                    total_stuff.append((server.webhook, data[0]))
+                                    server = await session.get(ExternalServer, data)
+                                    total_stuff.append((server.webhook, data))
                             for webhook_url, server_id in total_stuff:
                                 if server_id != message.guild.id:
                                     # Send the message with webhooks
