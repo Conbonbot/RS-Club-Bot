@@ -804,7 +804,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                         for data in (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars():
                                             if(data.level == queue[0]):
                                                 pre_amount = data.amount
-                                                user = await session.get(Queue, (ctx.guild.id, ctx.author.id, pre_amount, level))
+                                                user = await session.get(Queue, (ctx.author.id, pre_amount, level))
                                                 user.amount = int(queue[1])
                                                 user.time = int(time.time())
                                                 user.length = length
