@@ -198,7 +198,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         session.add(add_temp)
                         await session.commit()
                 elif minutes >= queue.length + 5:
-                        User_leave = (await session.get(Queue, (queue.server_id, queue.user_id, queue.amount, queue.level)))
+                        User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
                         user = await self.bot.fetch_user(queue.user_id)
