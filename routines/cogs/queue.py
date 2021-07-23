@@ -263,20 +263,22 @@ class RSQueue(commands.Cog, name='Queue'):
                 print_people.append((await self.bot.fetch_user(person.user_id)).display_name)
         print_people = list(set(print_people))
         connecting_servers = set(external_server_ids)
+        club_channel = await self.bot.fetch_channel(self.club_channels[level])
+        club_guild = await self.bot.fetch_guild(clubs_server_id)
         if club == 1:
             # Print queue to clubs server
             connecting_servers.add(clubs_server_id)
-            channel = await self.bot.fetch_channel(self.club_channels[level])
-            guild = await self.bot.fetch_guild(clubs_server_id)
-            await self.print_queue(guild, channel, level)
-            await channel.send(f"RS{level} Ready! {clubs_string_people}")
+            await self.print_queue(club_guild, club_channel, level)
+            await club_channel.send(f"RS{level} Ready! {clubs_string_people}")
             if len(connecting_servers) + club > 1:
                 sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
                 sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
                 sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes```"
-                await channel.send(sending)
+                await club_channel.send(sending)
             else:
-                await channel.send("Meet where?")
+                await club_channel.send("Meet where?")
+        else:
+            await club_channel.send(f"```The RS{level} queue has been filled.```")
         result = {}
         for sub in server_user_ids:
             if sub[0] in result:
@@ -310,10 +312,13 @@ class RSQueue(commands.Cog, name='Queue'):
                         printing = " "
                     await self.print_queue(guild, channel, level)
                     await channel.send(f"RS{level} Ready! {printing}")
-                    sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
-                    sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
-                    sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes.```"
-                    await channel.send(sending)
+                    if len(connecting_servers) > 1:
+                        sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
+                        sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
+                        sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes.```"
+                        await channel.send(sending)
+                    else:
+                        await channel.send("Meet where?")
         # Get RS Event data stuff
         if self.event:
             rs_run_id = await self.generate_run_id(True)
