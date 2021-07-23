@@ -271,7 +271,7 @@ class RSQueue(commands.Cog, name='Queue'):
             if len(connecting_servers) + club > 1:
                 sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
                 sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
-                sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 10 minutes```"
+                sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes```"
                 await channel.send(sending)
             else:
                 await channel.send("Meet where?")
@@ -309,7 +309,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     await channel.send(f"RS{level} Ready! {printing}")
                     sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
                     sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
-                    sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 10 minutes.```"
+                    sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes.```"
                     await channel.send(sending)
         # Get RS Event data stuff
         if self.event:

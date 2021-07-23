@@ -144,7 +144,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             talking = (await session.execute(select(Talking))).scalars()
             for talk in talking:
                 minutes = int((time.time() - talk.timestamp)/60)
-                if minutes > 10:
+                if minutes > 5:
                     await session.delete(talk)
             await session.commit()
 
