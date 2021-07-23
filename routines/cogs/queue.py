@@ -5,6 +5,7 @@ from aiosqlite.core import LOG
 
 import discord
 import sqlite3
+from discord.utils import get
 from dotenv.main import load_dotenv
 import psycopg2
 
@@ -266,7 +267,8 @@ class RSQueue(commands.Cog, name='Queue'):
             # Print queue to clubs server
             connecting_servers.add(clubs_server_id)
             channel = await self.bot.fetch_channel(self.club_channels[level])
-            await self.print_queue(channel, level)
+            guild = await self.bot.fetch_guild(clubs_server_id)
+            await self.print_queue(guild, channel, level)
             await channel.send(f"RS{level} Ready! {clubs_string_people}")
             if len(connecting_servers) + club > 1:
                 sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
@@ -299,13 +301,14 @@ class RSQueue(commands.Cog, name='Queue'):
                 # Print queue to servers who had players in that queue
                 else:
                     channel = await self.bot.fetch_channel(server.channel_id)
+                    guild = await self.bot.fetch_guild(server.server_id)
                     try:
                         server_ids = [tup[0] for tup in total_str_people]
                         index = server_ids.index(server.server_id)
                         printing = total_str_people[index][1]
                     except:
                         printing = " "
-                    await self.print_queue(channel, level)
+                    await self.print_queue(guild, channel, level)
                     await channel.send(f"RS{level} Ready! {printing}")
                     sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
                     sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
@@ -357,7 +360,7 @@ class RSQueue(commands.Cog, name='Queue'):
         count = await self.amount(level)
         guild = await self.bot.fetch_guild(clubs_server_id)
         channel = await self.bot.fetch_channel(self.club_channels[level])
-        await self.print_queue(channel, level)
+        await self.print_queue(guild, channel, level)
         if count == 3:
             await channel.send(f"{name} joined {self.rs_ping_1more[f'RS{level}']} ({count}/4)")
         else:
@@ -369,7 +372,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 if level <= server.max_rs:
                     guild = await self.bot.fetch_guild(server.server_id)
                     channel = await self.bot.fetch_channel(server.channel_id)
-                    await self.print_queue(channel, level)
+                    await self.print_queue(guild, channel, level)
                     rs_level = "rs" + str(level)
                     role_id = getattr(server, rs_level)
                     role = discord.utils.get(guild.roles, id=role_id)
@@ -382,16 +385,18 @@ class RSQueue(commands.Cog, name='Queue'):
 
     async def leaving_queue(self, ctx, level):
         # Print info in clubs server
+        guild = await self.bot.fetch_guild(clubs_server_id)
         channel = await self.bot.fetch_channel(self.club_channels[level])
-        await self.print_queue(channel, level, False)
+        await self.print_queue(guild, channel, level, False)
         await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
         # Print queues to other servers
         async with sessionmaker() as session:
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
                 if server.min_rs <= level <= server.max_rs:
+                    guild = await self.bot.fetch_guild(server.server_id)
                     channel = await self.bot.fetch_channel(server.channel_id)
-                    await self.print_queue(channel, level, False)
+                    await self.print_queue(guild, channel, level, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
 
     @tasks.loop(minutes=1.0)
@@ -670,7 +675,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                     await session.commit()
                                     break
                             LOGGER.debug("updated the queue they were in")
-            await self.print_queue(ctx.channel, self.rs_channel[str(ctx.message.channel)], False)
+            await self.print_queue(ctx.guild, ctx.channel, self.rs_channel[str(ctx.message.channel)], False)
             await ctx.send(f"{ctx.author.display_name} has left the RS{self.rs_channel[str(ctx.message.channel)]} Queue ({await self.amount(self.rs_channel[str(ctx.message.channel)])}/4)")
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
@@ -678,7 +683,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 if level <= server.max_rs:
                     guild = await self.bot.fetch_guild(server.server_id)
                     channel = await self.bot.fetch_channel(server.channel_id)
-                    await self.print_queue(channel, level, False)
+                    await self.print_queue(guild, channel, level, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
 
     @commands.command(help="type !o or !out, which leaves your current RS Queue")
@@ -823,13 +828,13 @@ class RSQueue(commands.Cog, name='Queue'):
     async def queue(self, ctx, level=None):
         if ctx.guild.id == clubs_server_id:
             level = self.rs_channel[str(ctx.message.channel)]
-            await self.print_queue(ctx.channel, level)
+            await self.print_queue(ctx.guild, ctx.channel, level)
         elif level == None:
             await ctx.send("Please specify an RS Queue to show (`!q #`)")
         else:
-            await self.print_queue(ctx.channel, int(level))
+            await self.print_queue(ctx.guild, ctx.channel, int(level))
 
-    async def print_queue(self, channel, level, display=True):
+    async def print_queue(self, guild, channel, level, display=True):
         extras = {
             'croid': discord.utils.get(self.bot.emojis, name='croid'),
             'influence': discord.utils.get(self.bot.emojis, name='influence'),
@@ -846,15 +851,6 @@ class RSQueue(commands.Cog, name='Queue'):
             'solo': discord.utils.get(self.bot.emojis, name='solo'),
             'solo2': discord.utils.get(self.bot.emojis, name='solo2'),
             'mass': discord.utils.get(self.bot.emojis, name='mass')
-        }
-        embed_colors = {
-            5: discord.Color.magenta(),
-            6: discord.Color.dark_gray(),
-            7: discord.Color.from_rgb(204, 204, 0),
-            8: discord.Color.orange(),
-            9: discord.Color.teal(),
-            10: discord.Color.blue(),
-            11: discord.Color.dark_gold()
         }
         mods = [(str(column))[5:] for column in inspect(Data).c]
         mods = mods[1:]
@@ -896,7 +892,15 @@ class RSQueue(commands.Cog, name='Queue'):
                     str_people += " " + list_people[i] + rsmods[i] + " 🕒 " + str(await self.queue_time(user_ids[i], counting[i], level)) + "m"
                     str_people += "\n"
                     i += 1
-                queue_embed = discord.Embed(color=embed_colors[level], title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
+                # Get cool colors for the embed
+                if guild.id == clubs_server_id:
+                    role_id = int((self.rs_ping[f'RS{level}'])[3:-1])
+                else:
+                    server = await session.get(ExternalServer, guild.id)
+                    rs_level = "rs" + str(level)
+                    role_id = getattr(server, rs_level)
+                role = discord.utils.get(guild.roles, id=role_id)
+                queue_embed = discord.Embed(color=role.color, title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
                 await channel.send(embed=queue_embed)
             else:
                 if display:

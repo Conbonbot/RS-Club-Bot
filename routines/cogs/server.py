@@ -341,8 +341,10 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             else:
                 run_id = user_talking.run_id
                 servers = (await session.execute(select(Talking).where(Talking.run_id == run_id))).scalars()
-                for server in servers:
-                    channel = await self.bot.fetch_channel(server.channel_id)
+                list_servers = [server.channel_id for server in servers]
+                list_servers = list(set(list_servers))
+                for server in list_servers:
+                    channel = await self.bot.fetch_channel(server)
                     await channel.send(f"```The connection has been closed by {ctx.author.display_name}.```")
                     await session.delete(server)
             await session.commit()
