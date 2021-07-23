@@ -163,8 +163,8 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             LOGGER.debug(f"Channel: {channel}")
             if channel.permissions_for(guild.me).send_messages:
                 await channel.send(f"Hello {guild.name}! I'm the bot from The Clubs discord server. You've added me to your server, which means you'll be able to queue for Red Stars without even leaving the comfort of your discord server!")
-                await channel.send(f"In order to be connected to The Clubs, I'll need a text channel to show the current queues. Once you have a text channel that I can use, simply run `!connect #` in the channel you want where # is the max rs level of your server and just like that you'll be connected to The Clubs!")
-                await channel.send(f"NOTE: The `!connect #` command can ONLY be run by an administrator of this server.")
+                await channel.send(f"In order to be connected to The Clubs, I'll need a text channel to show the current queues. Once you have a text channel that I can use, simply run `!connect # %` in the channel you want where # is the minimum rs level of your server abd % is the maximum (i.e. `!connect 5 9`) and just like that you'll be connected to The Clubs!")
+                await channel.send(f"NOTE: The `!connect # %` command can ONLY be run by an administrator of this server.")
                 break
 
     @commands.command()
@@ -192,9 +192,9 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     await ctx.send(print_str)
                     external_embed = discord.Embed(title='External', color=discord.Color.green())
                     if TESTING:
-                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=809871917946634261&permissions=8&scope=bot) and follow the steps")
+                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=537193536&scope=bot) and follow the steps")
                     else:
-                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=8&scope=bot) and follow the steps")
+                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=809871917946634261&permissions=537193536&scope=bot) and follow the steps")
                     external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
                     external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
                     external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # @<>` command, where # is the rs level, and @<> is the role that players in that rs level have. If you want to change the role, simply run the command again.")
@@ -315,8 +315,21 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             await ctx.invoke(self.bot.get_command('_out'), level=level)
         else:
             if level is None:
-                await ctx.send("Please specify queue")
-            else:
+                async with sessionmaker() as session:
+                    current_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
+                    if current_queues is None:
+                        await ctx.send("You are currently not in any queues")
+                    else:
+                        levels = [queue.level for queue in current_queues]
+                        print("LEVELS", levels)
+                        if len(levels) > 1:
+                            sending = "You were found in these queues, please specify which queue you want to leave: "
+                            sending += ', '.join(levels)
+                            await ctx.send(sending)
+                        elif len(levels) == 1:
+                            print("Removing level", levels[0])
+                            await ctx.invoke(self.bot.get_command('_out'), level=int(levels[0]), external=True)
+            else:   
                 await ctx.invoke(self.bot.get_command('_out'), level=level, external=True)
 
     @commands.command()

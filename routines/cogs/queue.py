@@ -259,7 +259,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 else:
                     club = 1
                     clubs_string_people += (await self.bot.fetch_user(person.user_id)).mention + " "
-                    print_people.append((await self.bot.fetch_user(person.user_id)).display_name)
+                print_people.append((await self.bot.fetch_user(person.user_id)).display_name)
         print_people = list(set(print_people))
         connecting_servers = set(external_server_ids)
         if club == 1:
@@ -293,7 +293,7 @@ class RSQueue(commands.Cog, name='Queue'):
             for server in servers:
                 # Tell servers the queue has been filled
                 if server.server_id not in connecting_servers:
-                    if level <= server.max_rs:
+                    if server.min_rs <= level <= server.max_rs:
                         channel = await self.bot.fetch_channel(server.channel_id)
                         await channel.send(f"```The RS{level} queue has been filled.```")
                 # Print queue to servers who had players in that queue
@@ -306,7 +306,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     except:
                         printing = " "
                     await self.print_queue(channel, level)
-                    await ctx.send(f"RS{level} Ready! {printing}")
+                    await channel.send(f"RS{level} Ready! {printing}")
                     sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
                     sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
                     sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 10 minutes.```"
@@ -389,7 +389,7 @@ class RSQueue(commands.Cog, name='Queue'):
         async with sessionmaker() as session:
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
-                if server.max_rs <= level <= server.max_rs:
+                if server.min_rs <= level <= server.max_rs:
                     channel = await self.bot.fetch_channel(server.channel_id)
                     await self.print_queue(channel, level, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
