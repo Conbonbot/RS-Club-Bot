@@ -82,13 +82,15 @@ class Help(CommandRoutine):
                     external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=809871917946634261&permissions=8&scope=bot) and follow the steps")
                 else:
                     external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=8&scope=bot) and follow the steps")
-                external_embed.add_field(name="First Time Setup", value=f"Run `!connect #` (where `#` is the max rs level of your server), and your server will be connected to The Clubs.")
-                external_embed.add_field(name="Setting up max RS levels", value=f"To change the max RS level of your server, run `!connect #` where `#` is the max rs level of your server.")
-                external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!rs_level # @<>` command, where # is the rs level, and @<> is the role that players in that rs level have. If you want to change the role, simply run the command again.")
+                external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
+                external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
+                external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # @<>` command, where # is the rs level, and @<> is the role that players in that rs level have. If you want to change the role, simply run the command again.")
+                external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # @<>` command.")
+                external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
                 external_embed.add_field(name="Joining Queues", value=f"Use the `!in #`/`!i #` command to join a queue, where `#` is the rs level you want to join. If `#` is not specified, it will default to your current rs level.")
                 external_embed.add_field(name="Leaving Queues", value=f"Use the `!out`/`!o` command to leave a queue.")
                 external_embed.add_field(name="Showing Queues", value=f"Use the `!q #` (where `#` is a rs level) command to show you the queue for rs#")
                 await ctx.send(embed=external_embed)
             else:
-                await ctx.send(f"{option} is not a valid option to the `!help` command, the current options are `role`, `queue`, `rsmod`, and `other`")
+                await ctx.send(f"{option} is not a valid option to the `!help` command, the current options are `role`, `queue`, `rsmod`, `external`, and `other`")
 

@@ -22,7 +22,7 @@ postgres_URL = URL.create('postgresql+asyncpg',
 
 
 #engine = create_async_engine(postgres_URL, echo=True, poolclass=NullPool)
-engine = create_async_engine(postgres_URL, echo=True)
+engine = create_async_engine(postgres_URL, echo=True, pool_size=10, max_overflow=20)
 sessionmaker = maker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 

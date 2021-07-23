@@ -27,7 +27,10 @@ from routines import sessionmaker
 # TODO: Use an actual settings file.
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
 
-
+if TESTING:
+    clubs_server_id = 805959424081920022
+else:
+    clubs_server_id = 682479756104564775
 
 
 
@@ -116,7 +119,7 @@ class RSRole(commands.Cog, name='Role'):
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-        if right_channel:
+        if right_channel or ctx.guild.id != clubs_server_id:
             extras = {
                 'croid': discord.utils.get(self.bot.emojis, name='croid'),
                 'influence': discord.utils.get(self.bot.emojis, name='influence'),
@@ -177,7 +180,7 @@ class RSRole(commands.Cog, name='Role'):
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-        if right_channel:
+        if right_channel or ctx.guild.id != clubs_server_id:
             async with sessionmaker() as session:
                 if mod in mods:
                     # Check to see if they already are in the data table
@@ -209,7 +212,7 @@ class RSRole(commands.Cog, name='Role'):
         for club_channel in self.rs_channel:
             if club_channel == str(ctx.message.channel):
                 right_channel = True
-        if right_channel:   
+        if right_channel or ctx.guild.id != clubs_server_id:   
             async with sessionmaker() as session:
                 if mod in mods:
                     user_mods = (await session.get(Data, ctx.author.id))
@@ -313,11 +316,11 @@ class RSRole(commands.Cog, name='Role'):
                 if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
                     if str(payload.emoji) == '✅':
                         async with sessionmaker() as session:
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id, payload.message_id))
+                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
                             user.time = int(time.time())
                             level = user.level
                             amount = user.amount
-                            queue_user = await session.get(Queue, (payload.guild_id, payload.user_id, amount, level))
+                            queue_user = await session.get(Queue, (payload.user_id, amount, level))
                             queue_user.time = int(time.time())
                             await session.commit()
                             channel = await self.bot.fetch_channel(payload.channel_id)
@@ -325,7 +328,7 @@ class RSRole(commands.Cog, name='Role'):
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id, payload.message_id))
+                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
                             await session.delete(user)
                             await session.commit()
                     elif str(payload.emoji) == '❌':
@@ -337,16 +340,16 @@ class RSRole(commands.Cog, name='Role'):
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             # Get the user from the temp database
-                            user = (await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id, payload.message_id)))
+                            user = (await session.get(Temp, ( payload.channel_id, payload.user_id, payload.message_id)))
                             amount = user.amount
                             level = user.level
                             # Kick the user from the queue 
-                            User_leave = (await session.get(Queue, (payload.guild_id, payload.user_id, amount, level)))
+                            User_leave = (await session.get(Queue, (payload.user_id, amount, level)))
+                            await channel.send(f"{User_leave.nickname} has left RS{level} ({await self.amount(level)}/4)")
                             await session.delete(User_leave)
                             await session.commit()
-                            await channel.send(f"{payload.member.mention} has left RS{level} ({await self.amount(level)}/4)")
                             # Remove them from the temp database
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id, payload.message_id))
+                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
                             await session.delete(user)
                             await session.commit()
                     elif(int(payload.member.id) != self.bot.user.id):

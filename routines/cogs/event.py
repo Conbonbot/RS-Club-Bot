@@ -89,49 +89,6 @@ class RSEvent(commands.Cog, name='Event'):
         channel = await self.bot.fetch_channel(rs_leaderboard_channel_id)
         message = await channel.fetch_message(rs_leaderboard_message_id)
         await message.edit(embed=leaderboard_embed)
-
-            
-
-    @commands.command()
-    async def test(self, ctx):
-        async with sessionmaker() as session:
-            all_events = (await session.execute(select(Event).where(Event.score != 0))).scalars()
-            # Check each run in event
-            player_data = []
-            for event in all_events:
-                run_stats = (await session.execute(select(Stats).where(Stats.run_id == event.run_id))).scalars()
-                for run in run_stats:
-                    player_data.append([run.user_id, event.score])
-        # Add up all player data
-        D = {}
-        for (x, y) in player_data:
-            if x not in D.keys():
-                D[x] = y
-            else:
-                D[x] += y
-        full_data = [[x, D[x]] for x in D.keys()]
-        full_data.sort(key = lambda x: x[1], reverse=True)
-        # Work around the longest name
-        longest_name = 0
-        for i in range(len(full_data)):
-            full_data[i][0] = (await ctx.guild.fetch_member(full_data[i][0])).display_name
-            if len(full_data[i][0]) > longest_name:
-                longest_name = len(full_data[i][0])
-        # Now build the leaderboard
-
-        max_players = 50
-        # String will be 5 long for position, longest_name + 2 (1 space on each side) for user, and 1+len(full_data[0][1])
-        if longest_name % 2 == 0:
-            leaderboard_string = "```" + f"Rank |" + " "*(int(longest_name/2)) + "User" + " "*(int(longest_name/2)-2) + "| Score\n"
-        else:
-            leaderboard_string = "```" + f"Rank |" + " "*(int(longest_name/2)) + "User" + " "*(int(longest_name/2)-1) + "| Score\n"
-        for i in range(len(full_data)):
-            if i < max_players:
-                leaderboard_string += f"#{i}" + " " *(int(5)-int(len(f"#{i}"))) + f"| " + f"{full_data[i][0]}" + " "*(1+longest_name-int(len(full_data[i][0]))) + "| " + f"{full_data[i][1]}\n"
-        leaderboard_string += "```"
-        leaderboard_embed = discord.Embed(title=f"RS Event Leaderboard", description=leaderboard_string, color=discord.Color.green())
-        message = await ctx.send(embed=leaderboard_embed)
-        await message.edit(embed=None, content="Hehe tricked you")
                 
 
     @tasks.loop(minutes=15.0)

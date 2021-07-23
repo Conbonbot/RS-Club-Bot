@@ -42,13 +42,13 @@ if not TOKEN:
 
 
 DB_TABLES = [
-    'queue(server_id BIGINT, user_id BIGINT, amount SMALLINT, level SMALLINT, time BIGINT, length INTEGER, channel_id BIGINT);',
+    'queue(server_id BIGINT, user_id BIGINT, amount SMALLINT, level SMALLINT, time BIGINT, length INTEGER, channel_id BIGINT, nickname TEXT);',
     'data(server_id BIGINT, user_id BIGINT, croid BOOLEAN DEFAULT FALSE, influence BOOLEAN DEFAULT FALSE, nosanc BOOLEAN DEFAULT FALSE, notele BOOLEAN DEFAULT FALSE, rse BOOLEAN DEFAULT FALSE, suppress BOOLEAN DEFAULT FALSE, unity BOOLEAN DEFAULT FALSE, veng BOOLEAN DEFAULT FALSE,barrage BOOLEAN DEFAULT FALSE, laser BOOLEAN DEFAULT FALSE, battery BOOLEAN DEFAULT FALSE, dart BOOLEAN DEFAULT FALSE, solo BOOLEAN DEFAULT FALSE, solo2 BOOLEAN DEFAULT FALSE, mass BOOLEAN DEFAULT FALSE);',
     'temp(server_id BIGINT, channel_id BIGINT, user_id BIGINT, message_id BIGINT, amount SMALLINT, level SMALLINT);',
-    'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE);',
-    'externalusers(server_id BIGINT, user_id BIGINT, rs_level SMALLINT, pings SMALLINT);',
+    'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, min_rs SMALLINT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE, rs5 BIGINT DEFAULT 0, rs6 BIGINT DEFAULT 0, rs7 BIGINT DEFAULT 0, rs8 BIGINT DEFAULT 0, rs9 BIGINT DEFAULT 0, rs10 BIGINT DEFAULT 0, rs11 BIGINT DEFAULT 0);',
     'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT, run_id INT);',
-    'event(run_id INT, score SMALLINT, timestamp BIGINT)'
+    'event(run_id INT, score SMALLINT, timestamp BIGINT);',
+    'talking(run_id INT, server_id BIGINT, user_id BIGINT, timestamp BIGINT, channel_id BIGINT);'
 ]
 
 

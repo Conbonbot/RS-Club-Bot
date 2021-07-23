@@ -11,13 +11,14 @@ Base = declarative_base()
 
 class Queue(Base):
     __tablename__ = 'queue'
-    server_id = Column(BigInteger, primary_key=True)
+    server_id = Column(BigInteger)
     user_id = Column(BigInteger, primary_key=True)
     amount = Column(SmallInteger, primary_key=True)
     level = Column(SmallInteger, primary_key=True)
     time = Column(BigInteger)
     length = Column(Integer)
     channel_id = Column(BigInteger)
+    nickname = Column(Text)
 
 class Data(Base):
     __tablename__ = 'data'
@@ -40,7 +41,7 @@ class Data(Base):
 
 class Temp(Base):
     __tablename__ = 'temp'
-    server_id = Column(BigInteger, primary_key=True)
+    server_id = Column(BigInteger)
     channel_id = Column(BigInteger, primary_key=True)
     user_id = Column(BigInteger, primary_key=True)
     message_id = Column(BigInteger, primary_key=True)
@@ -53,15 +54,16 @@ class ExternalServer(Base):
     server_name = Column(Text)
     channel_id = Column(BigInteger)
     webhook = Column(Text)
+    min_rs = Column(SmallInteger)
     max_rs = Column(SmallInteger)
     global_chat = Column(Boolean)
-
-class ExternalUsers(Base):
-    __tablename__= 'externalusers'
-    server_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, primary_key=True)
-    rs_level = Column(SmallInteger, primary_key=True)
-    pings = Column(SmallInteger)
+    rs5 = Column(BigInteger)
+    rs6 = Column(BigInteger)
+    rs7 = Column(BigInteger)
+    rs8 = Column(BigInteger)
+    rs9 = Column(BigInteger)
+    rs10 = Column(BigInteger)
+    rs11 = Column(BigInteger)
 
 class Stats(Base):
     __tablename__= 'stats'
@@ -75,6 +77,14 @@ class Event(Base):
     run_id = Column(Integer, primary_key=True)
     score = Column(SmallInteger)
     timestamp = Column(BigInteger)
+
+class Talking(Base):
+    __tablename__ = 'talking'
+    run_id = Column(Integer)
+    server_id = Column(BigInteger)
+    user_id = Column(BigInteger, primary_key=True)
+    timestamp = Column(BigInteger)
+    channel_id = Column(BigInteger)
     
 
     
