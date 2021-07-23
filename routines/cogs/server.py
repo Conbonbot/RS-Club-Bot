@@ -363,10 +363,17 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 active_global = True
         if active_global:
             total_info = []
+            total_servers = []
             async with sessionmaker() as session:
                 current_talking = (await session.execute(select(Talking))).scalars()
                 for user in current_talking:
                     total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
+                    total_servers.append(user.server_id)
+            total_servers = list(set(total_servers))
+            actual_total_info = []
+            for server in total_servers:
+                if server == total_info[0] and server not in [info[0] for info in actual_total_info]:
+                    actual_total_info.append(total_info)
             # TOTAL INFO -> SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
             # Check if the message was sent from the select people and in the right channel
             if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:
@@ -375,7 +382,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         # cut out bot messages and commands
                         async with sessionmaker() as session:
                             total_stuff = []
-                            for data in total_info:
+                            for data in actual_total_info:
                                 if data[2] in self.club_channels.values():
                                     rs_level = (await session.get(Stats, (data[1], data[3]))).rs_level
                                     clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
