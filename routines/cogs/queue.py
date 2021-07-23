@@ -750,7 +750,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 if len(data) == 0:  # They weren't found in the database, add them
                     LOGGER.debug("Adding them to the queue")
                     async with sessionmaker() as session:
-                        User_entering_queue = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=1, level=level, time=int(time.time()), length=length, channel_id=ctx.channel.id, nickname=ctx.author.display_name)
+                        User_entering_queue = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=1, level=int(level), time=int(time.time()), length=int(length), channel_id=ctx.channel.id, nickname=ctx.author.display_name)
                         session.add(User_entering_queue)
                         await session.commit()
                         # Print out the queue
@@ -796,7 +796,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                     if len(data) == 0:
                                         # They weren't found elsewhere, add them to the new queue
                                         async with sessionmaker() as session:
-                                            user = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=queue[1], level=level, time=int(time.time()), length=length, channel_id=ctx.channel.id, nickname=ctx.author.display_name)
+                                            user = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=queue[1], level=int(level), time=int(time.time()), length=length, channel_id=ctx.channel.id, nickname=ctx.author.display_name)
                                             session.add(user)
                                             await session.commit()
                                     else:

@@ -261,7 +261,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     async def _in(self, ctx, level=None, length=60):
         if ctx.guild.id == clubs_server_id: # Run the command as usual
             level = self.rs_channel[str(ctx.message.channel)]
-            await ctx.invoke(self.bot.get_command('rs'), level=level, length=length)
+            await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length)
         else:
             # Check if they have the right role with Externalserver (or if it is above it)
             if level is None:
@@ -284,7 +284,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     else:
                         level = confirmed_roles[0]
                         print("ADDING THEM TO THE QUEUE")
-                        await ctx.invoke(self.bot.get_command('rs'), level=level, length=length, external=True)
+                        await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length, external=True)
             else:
                 async with sessionmaker() as session:
                     server = await session.get(ExternalServer, ctx.guild.id)
@@ -304,7 +304,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                                         has_role = True
                                         break
                         if has_role:
-                            await ctx.invoke(self.bot.get_command('rs'), level=level, length=length, external=True)
+                            await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length, external=True)
                     else:
                         await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
 
