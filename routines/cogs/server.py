@@ -320,7 +320,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     if current_queues is None:
                         await ctx.send("You are currently not in any queues")
                     else:
-                        levels = [queue.level for queue in current_queues]
+                        levels = [str(queue.level) for queue in current_queues]
                         print("LEVELS", levels)
                         if len(levels) > 1:
                             sending = "You were found in these queues, please specify which queue you want to leave: "
