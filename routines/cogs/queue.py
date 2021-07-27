@@ -379,14 +379,25 @@ class RSQueue(commands.Cog, name='Queue'):
                     channel = await self.bot.fetch_channel(server.channel_id)
                     await self.print_queue(guild, channel, level)
                     rs_level = "rs" + str(level)
+                    rs_level_34 = "rs" + str(level) + "_34"
                     role_id = getattr(server, rs_level)
+                    role_id_34 = getattr(server, rs_level_34)
                     role = discord.utils.get(guild.roles, id=role_id)
-                    if role is None:
-                        print_str = f"{name} joined rs{level} ({count}/4)"
-                        print_str += f"\nNo roles were found for rs{level}, specify them with the `!level` command."
-                        await channel.send(print_str)
+                    role_34 = discord.utils.get(guild.roles, id=role_id_34)
+                    if count == 3:
+                        if role_34 is None:
+                            print_str = f"{name} joined rs{level} ({count}/4)"
+                            print_str += f"\nNo roles were found for rs{level} 3/4, specify them with the `!level` command."
+                            await channel.send(print_str)
+                        else:
+                            await channel.send(f"{name} joined {role_34.mention} ({count}/4)")
                     else:
-                        await channel.send(f"{name} joined {role.mention} ({count}/4)")
+                        if role is None:
+                            print_str = f"{name} joined rs{level} ({count}/4)"
+                            print_str += f"\nNo roles were found for rs{level}, specify them with the `!level` command."
+                            await channel.send(print_str)
+                        else:
+                            await channel.send(f"{name} joined {role.mention} ({count}/4)")
 
     async def leaving_queue(self, ctx, level):
         # Print info in clubs server
@@ -451,6 +462,8 @@ class RSQueue(commands.Cog, name='Queue'):
         await asyncio.sleep(10)
         await ctx.message.delete()
         await message.delete()
+
+
 
 
     @commands.command(aliases=["r", "^", "staying"])
@@ -904,6 +917,12 @@ class RSQueue(commands.Cog, name='Queue'):
                     server = await session.get(ExternalServer, guild.id)
                     rs_level = "rs" + str(level)
                     role_id = getattr(server, rs_level)
+                    if role_id is None:
+                        rs_level = "rs" + str(level) + "_34"
+                        role_id = getattr(server, rs_level)
+                    if role_id is None:
+                        rs_level = "rs" + str(level) + "_silent"
+                        role_id = getattr(server, rs_level)
                 role = discord.utils.get(guild.roles, id=role_id)
                 queue_embed = discord.Embed(color=role.color, title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
                 await channel.send(embed=queue_embed)

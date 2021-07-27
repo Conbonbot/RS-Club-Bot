@@ -45,7 +45,7 @@ DB_TABLES = [
     'queue(server_id BIGINT, user_id BIGINT, amount SMALLINT, level SMALLINT, time BIGINT, length INTEGER, channel_id BIGINT, nickname TEXT);',
     'data(server_id BIGINT, user_id BIGINT, croid BOOLEAN DEFAULT FALSE, influence BOOLEAN DEFAULT FALSE, nosanc BOOLEAN DEFAULT FALSE, notele BOOLEAN DEFAULT FALSE, rse BOOLEAN DEFAULT FALSE, suppress BOOLEAN DEFAULT FALSE, unity BOOLEAN DEFAULT FALSE, veng BOOLEAN DEFAULT FALSE,barrage BOOLEAN DEFAULT FALSE, laser BOOLEAN DEFAULT FALSE, battery BOOLEAN DEFAULT FALSE, dart BOOLEAN DEFAULT FALSE, solo BOOLEAN DEFAULT FALSE, solo2 BOOLEAN DEFAULT FALSE, mass BOOLEAN DEFAULT FALSE);',
     'temp(server_id BIGINT, channel_id BIGINT, user_id BIGINT, message_id BIGINT, amount SMALLINT, level SMALLINT);',
-    'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, min_rs SMALLINT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE, rs5 BIGINT DEFAULT 0, rs6 BIGINT DEFAULT 0, rs7 BIGINT DEFAULT 0, rs8 BIGINT DEFAULT 0, rs9 BIGINT DEFAULT 0, rs10 BIGINT DEFAULT 0, rs11 BIGINT DEFAULT 0);',
+    'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, min_rs SMALLINT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE, rs5 BIGINT DEFAULT 0, rs6 BIGINT DEFAULT 0, rs7 BIGINT DEFAULT 0, rs8 BIGINT DEFAULT 0, rs9 BIGINT DEFAULT 0, rs10 BIGINT DEFAULT 0, rs11 BIGINT DEFAULT 0, rs5_34 BIGINT DEFAULT 0, rs6_34 BIGINT DEFAULT 0, rs7_34 BIGINT DEFAULT 0, rs8_34 BIGINT DEFAULT 0, rs9_34 BIGINT DEFAULT 0, rs10_34 BIGINT DEFAULT 0, rs11_34 BIGINT DEFAULT 0, rs5_silent BIGINT DEFAULT 0, rs6_silent BIGINT DEFAULT 0, rs7_silent BIGINT DEFAULT 0, rs8_silent BIGINT DEFAULT 0, rs9_silent BIGINT DEFAULT 0, rs10_silent BIGINT DEFAULT 0, rs11_silent BIGINT DEFAULT 0);',
     'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT, run_id INT);',
     'event(run_id INT, score SMALLINT, timestamp BIGINT);',
     'talking(run_id INT, server_id BIGINT, user_id BIGINT, timestamp BIGINT, channel_id BIGINT);'
@@ -72,6 +72,22 @@ class RSClubBot(commands.Bot):
             for table in DB_TABLES:
                 LOGGER.debug(f"Creating DB table: {table}")
                 cur.execute(f'CREATE TABLE IF NOT EXISTS {table}')
+            # TODO: use once on production
+            cur.execute(f'''ALTER TABLE externalserver 
+            ADD COLUMN rs5_34 BIGINT DEFAULT 0,
+            ADD COLUMN rs6_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs7_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs8_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs9_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs10_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs11_34 BIGINT DEFAULT 0, 
+            ADD COLUMN rs5_silent BIGINT DEFAULT 0, 
+            ADD COLUMN rs6_silent BIGINT DEFAULT 0, 
+            ADD COLUMN rs7_silent BIGINT DEFAULT 0, 
+            ADD COLUMN rs8_silent BIGINT DEFAULT 0, 
+            ADD COLUMN rs9_silent BIGINT DEFAULT 0,
+            ADD COLUMN rs10_silent BIGINT DEFAULT 0,
+            ADD COLUMN rs11_silent BIGINT DEFAULT 0;''')
             conn.commit()
             cur.close()
 

@@ -64,6 +64,20 @@ class ExternalServer(Base):
     rs9 = Column(BigInteger)
     rs10 = Column(BigInteger)
     rs11 = Column(BigInteger)
+    rs5_34 = Column(BigInteger)
+    rs6_34 = Column(BigInteger)
+    rs7_34 = Column(BigInteger)
+    rs8_34 = Column(BigInteger)
+    rs9_34 = Column(BigInteger)
+    rs10_34 = Column(BigInteger)
+    rs11_34 = Column(BigInteger)
+    rs5_silent = Column(BigInteger)
+    rs6_silent = Column(BigInteger)
+    rs7_silent = Column(BigInteger)
+    rs8_silent = Column(BigInteger)
+    rs9_silent = Column(BigInteger)
+    rs10_silent = Column(BigInteger)
+    rs11_silent = Column(BigInteger)
 
 class Stats(Base):
     __tablename__= 'stats'

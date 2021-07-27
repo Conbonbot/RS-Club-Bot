@@ -197,8 +197,8 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=809871917946634261&permissions=537193536&scope=bot) and follow the steps")
                     external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
                     external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
-                    external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # @<>` command, where # is the rs level, and @<> is the role that players in that rs level have. If you want to change the role, simply run the command again.")
-                    external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # @<>` command.")
+                    external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
+                    external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # type @<>` command.")
                     external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
                     external_embed.add_field(name="Joining Queues", value=f"Use the `!in #`/`!i #` command to join a queue, where `#` is the rs level you want to join. If `#` is not specified, it will default to your current rs level.")
                     external_embed.add_field(name="Leaving Queues", value=f"Use the `!out`/`!o` command to leave a queue.")
@@ -228,33 +228,51 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     async def current(self, ctx):
         async with sessionmaker() as session:
             server = await session.get(ExternalServer, ctx.guild.id)
-            role_ids = [getattr(server, "rs" + str(i)) for i in range(5,12)]
-            print_str = "Below is what pings are currently set up on this server. If you want to add more, use the `!level` command:\n```"
+            rs_types = ["rs", "rs_34", "rs_silent"]
+            role_ids = [(i, (rs[:2].upper() + str(i) + (" 3/4" if rs == "rs_34" else " silent" if rs == "rs_silent" else "")), getattr(server, (rs[:2] + str(i) + rs[2:]))) for rs in rs_types for i in range(5,12)]
+            print_str = "Below is what roles are currently set up on this server. If you want to add more, use the `!level` command:\n```"
             print_str += f"Min RS: rs{server.min_rs}\n"
-            index = 5
-            for role in role_ids:
-                if role is not None:
+            role_ids = [sub for sub in role_ids if not sub[2] == None if not sub[2] == 0]
+            role_ids.sort()
+            longest = 0
+            for sub in role_ids:
+                if longest < len(sub[1]):
+                    longest = len(sub[1])
+            for (id, level, role) in role_ids:
+                if role is not None or int(role) != 0:
                     full_role = discord.utils.get(ctx.guild.roles, id=role)
-                    print_str += f"RS{index}: {full_role.name}\n"
-                index += 1
+                    #print_str += f"{level} | {full_role.name}\n"
+                    print_str += f"{level}"
+                    print_str += " "*(longest-len(level)) + " | "
+                    print_str += full_role.name + "\n"
             print_str += f"Max RS: rs{server.max_rs} ```"
             await ctx.send(print_str)
 
     @commands.command()
     @has_permissions(manage_roles=True)
-    async def level(self, ctx, level, role):
-        async with sessionmaker() as session:
-            server = await session.get(ExternalServer, ctx.guild.id)
-            if server.min_rs <= int(level) <= server.max_rs:
-                rs_level = "rs" + str(level)
-                setattr(server, rs_level, int(role[3:-1]))
-                await session.commit()
-                await ctx.send(f"RS{level} pings set to {role}")
-            else:
-                if server.min_rs > int(level):
-                    await ctx.send(f"{level} is below your server's current min rs of rs{server.min_rs}. If you want to change this, run `!connect {level} {server.max_rs}`")
+    async def level(self, ctx, level, type, role):
+        if type == "all" or type == "3/4" or type == "silent":
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if server.min_rs <= int(level) <= server.max_rs:
+                    if type == "all":
+                        rs_level = "rs" + str(level)
+                    elif type == "3/4":
+                        rs_level = "rs" + str(level) + "_34"
+                    elif type == "silent":
+                        rs_level = "rs" + str(level) + "_silent"
+                    print("HERE IS THE RS LEVEL", rs_level)
+                    setattr(server, rs_level, int(role[3:-1]))
+                    await session.commit()
+                    saying = "RS" + str(level) if type == "all" else "RS" + str(level) + " 3/4" if type == "3/4" else "RS" + str(level) + " Silent" if type == "silent" else ""
+                    await ctx.send(f"```{saying} pings set to {role} (yes that is the right role, this is just the id of the role)```")
                 else:
-                    await ctx.send(f"{level} is above your server's current max rs of rs{server.max_rs}. If you want to change this, run `!connect {server.max_rs} {level}`")
+                    if server.min_rs > int(level):
+                        await ctx.send(f"{level} is below your server's current min rs of rs{server.min_rs}. If you want to change this, run `!connect {level} {server.max_rs}`")
+                    else:
+                        await ctx.send(f"{level} is above your server's current max rs of rs{server.max_rs}. If you want to change this, run `!connect {server.min_rs} {level}`")
+        else:
+            await ctx.send("Specify the type of role this is, i.e. `all`, `3/4`, or `silent`")
 
 
     @commands.command(aliases=["in", "i"])
@@ -269,9 +287,12 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 async with sessionmaker() as session:
                     server = await session.get(ExternalServer, ctx.guild.id)
                     role_ids = []
-                    for i in range(5,12):
-                        if getattr(server, "rs" + str(i)) is not None:
-                            role_ids.append((i, getattr(server, "rs" + str(i))))
+                    role_types = ["rs", "rs_34", "rs_silent"]
+                    for role in role_types:
+                        for i in range(5,12):
+                            check_role = role[:2] + str(i) + role[2:]
+                            if getattr(server, check_role) is not None:
+                                role_ids.append((i, getattr(server, check_role)))
                     role_ids = role_ids[::-1]
                     confirmed_roles = []
                     for user_roles in ctx.author.roles:
