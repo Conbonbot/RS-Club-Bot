@@ -267,7 +267,6 @@ class RSQueue(commands.Cog, name='Queue'):
         club_guild = await self.bot.fetch_guild(clubs_server_id)
         if club == 1:
             # Print queue to clubs server
-            connecting_servers.add(clubs_server_id)
             await self.print_queue(club_guild, club_channel, level)
             await club_channel.send(f"RS{level} Ready! {clubs_string_people}")
             if len(connecting_servers) + club > 1:
@@ -277,6 +276,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 await club_channel.send(sending)
             else:
                 await club_channel.send("Meet where?")
+            connecting_servers.add(clubs_server_id)
         else:
             await club_channel.send(f"```The RS{level} queue has been filled.```")
         result = {}
