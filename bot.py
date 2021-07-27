@@ -72,22 +72,6 @@ class RSClubBot(commands.Bot):
             for table in DB_TABLES:
                 LOGGER.debug(f"Creating DB table: {table}")
                 cur.execute(f'CREATE TABLE IF NOT EXISTS {table}')
-            # TODO: use once on production
-            cur.execute(f'''ALTER TABLE externalserver 
-            ADD COLUMN rs5_34 BIGINT DEFAULT 0,
-            ADD COLUMN rs6_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs7_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs8_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs9_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs10_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs11_34 BIGINT DEFAULT 0, 
-            ADD COLUMN rs5_silent BIGINT DEFAULT 0, 
-            ADD COLUMN rs6_silent BIGINT DEFAULT 0, 
-            ADD COLUMN rs7_silent BIGINT DEFAULT 0, 
-            ADD COLUMN rs8_silent BIGINT DEFAULT 0, 
-            ADD COLUMN rs9_silent BIGINT DEFAULT 0,
-            ADD COLUMN rs10_silent BIGINT DEFAULT 0,
-            ADD COLUMN rs11_silent BIGINT DEFAULT 0;''')
             conn.commit()
             cur.close()
 
