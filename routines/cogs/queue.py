@@ -198,7 +198,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                         session.add(add_temp)
                         await session.commit()
-                elif minutes >= queue.length + 1: # TODO: change to 5
+                elif minutes >= queue.length + 5:
                         User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
