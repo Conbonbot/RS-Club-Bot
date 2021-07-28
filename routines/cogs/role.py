@@ -21,7 +21,7 @@ from sqlalchemy import inspect
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import Queue, Data, Temp
+from routines.tables import Queue, Data, Temp, ExternalServer
 from routines import sessionmaker
 
 # TODO: Use an actual settings file.
@@ -345,7 +345,13 @@ class RSRole(commands.Cog, name='Role'):
                             level = user.level
                             # Kick the user from the queue 
                             User_leave = (await session.get(Queue, (payload.user_id, amount, level)))
-                            await channel.send(f"{User_leave.nickname} has left RS{level} ({await self.amount(level)}/4)")
+                            count = await self.amount(level)
+                            await channel.send(f"{User_leave.nickname} has left RS{level} ({count}/4)")
+                            servers = (await session.execute(select(ExternalServer))).scalars()
+                            for server in servers:
+                                if server.min_rs <= User_leave.level <= server.max_rs:
+                                    channel = await self.bot.fetch_channel(server.channel_id)
+                                    await channel.send(f"{User_leave.nickname} has left RS{User_leave.level} ({count}/4)")
                             await session.delete(User_leave)
                             await session.commit()
                             # Remove them from the temp database
