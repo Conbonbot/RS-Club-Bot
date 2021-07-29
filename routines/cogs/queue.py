@@ -221,7 +221,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         await session.commit()
             await session.commit()
         
-    async def right_channel(self, ctx, rs_club_server=True):
+    async def right_channel(self, ctx):
         right_channel = False
         channel = ""
         for club_channel in self.rs_channel:
@@ -230,7 +230,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 channel = club_channel
         return (right_channel, channel)
 
-    async def right_role(self, ctx, channel, rs_club_server=True):
+    async def right_role(self, ctx, channel):
         has_right_role = False
         for role in ctx.author.roles:
             if str(role)[2:].isnumeric():  # Checks main role (rs#)
@@ -468,7 +468,15 @@ class RSQueue(commands.Cog, name='Queue'):
         await ctx.message.delete()
         await message.delete()
 
-
+    @commands.command()
+    async def test(self, ctx):
+        async with sessionmaker() as session:
+            servers = (await session.execute(select(ExternalServer))).scalars()
+        for server in servers:
+            await ctx.send(server.server_id)
+        await ctx.send(servers)
+        for server in servers:
+            await ctx.send(server.server_id)
 
 
     @commands.command(aliases=["r", "^", "staying"])
