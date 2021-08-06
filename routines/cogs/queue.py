@@ -496,7 +496,7 @@ class RSQueue(commands.Cog, name='Queue'):
             name = member.display_name
         nick = f"[{' '.join(corp)}] " + name
         await member.edit(nick=nick)
-        await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {corp}")
+        await ctx.send(f"{ctx.author.display_name}, Your corp has been set to {' '.join(corp)}")
 
 
     @commands.command()
