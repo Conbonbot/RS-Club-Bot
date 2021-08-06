@@ -48,7 +48,8 @@ DB_TABLES = [
     'externalserver(server_id BIGINT, server_name TEXT, channel_id BIGINT, webhook TEXT, min_rs SMALLINT, max_rs SMALLINT, global_chat BOOLEAN DEFAULT FALSE, rs5 BIGINT DEFAULT 0, rs6 BIGINT DEFAULT 0, rs7 BIGINT DEFAULT 0, rs8 BIGINT DEFAULT 0, rs9 BIGINT DEFAULT 0, rs10 BIGINT DEFAULT 0, rs11 BIGINT DEFAULT 0, rs5_34 BIGINT DEFAULT 0, rs6_34 BIGINT DEFAULT 0, rs7_34 BIGINT DEFAULT 0, rs8_34 BIGINT DEFAULT 0, rs9_34 BIGINT DEFAULT 0, rs10_34 BIGINT DEFAULT 0, rs11_34 BIGINT DEFAULT 0, rs5_silent BIGINT DEFAULT 0, rs6_silent BIGINT DEFAULT 0, rs7_silent BIGINT DEFAULT 0, rs8_silent BIGINT DEFAULT 0, rs9_silent BIGINT DEFAULT 0, rs10_silent BIGINT DEFAULT 0, rs11_silent BIGINT DEFAULT 0);',
     'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT, run_id INT);',
     'event(run_id INT, score SMALLINT, timestamp BIGINT);',
-    'talking(run_id INT, server_id BIGINT, user_id BIGINT, timestamp BIGINT, channel_id BIGINT);'
+    'talking(run_id INT, server_id BIGINT, user_id BIGINT, timestamp BIGINT, channel_id BIGINT);',
+    'reactions(server_id BIGINT, rs_message_id BIGINT, rs_34_message_id BIGINT, rs_silent_message_id BIGINT);'
 ]
 
 

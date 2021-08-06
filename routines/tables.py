@@ -41,12 +41,12 @@ class Data(Base):
 
 class Temp(Base):
     __tablename__ = 'temp'
-    server_id = Column(BigInteger)
+    server_id = Column(BigInteger, primary_key=True)
     channel_id = Column(BigInteger, primary_key=True)
     user_id = Column(BigInteger, primary_key=True)
-    message_id = Column(BigInteger, primary_key=True)
+    message_id = Column(BigInteger)
     amount = Column(SmallInteger)
-    level = Column(SmallInteger)
+    level = Column(SmallInteger, primary_key=True)
 
 class ExternalServer(Base):
     __tablename__ = 'externalserver'
@@ -99,6 +99,14 @@ class Talking(Base):
     user_id = Column(BigInteger, primary_key=True)
     timestamp = Column(BigInteger)
     channel_id = Column(BigInteger)
+
+class Reactions(Base):
+    __tablename__ = 'reactions'
+    server_id = Column(BigInteger, primary_key=True)
+    rs_message_id = Column(BigInteger)
+    rs_34_message_id = Column(BigInteger)
+    rs_silent_message_id = Column(BigInteger)
+
     
 
     

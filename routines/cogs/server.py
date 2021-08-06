@@ -163,7 +163,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             LOGGER.debug(f"Channel: {channel}")
             if channel.permissions_for(guild.me).send_messages:
                 await channel.send(f"Hello {guild.name}! I'm the bot from The Clubs discord server. You've added me to your server, which means you'll be able to queue for Red Stars without even leaving the comfort of your discord server!")
-                await channel.send(f"In order to be connected to The Clubs, I'll need a text channel to show the current queues. Once you have a text channel that I can use, simply run `!connect # %` in the channel you want where # is the minimum rs level of your server abd % is the maximum (i.e. `!connect 5 9`) and just like that you'll be connected to The Clubs!")
+                await channel.send(f"In order to be connected to The Clubs, I'll need a text channel to show the current queues. Once you have a text channel that I can use, simply run `!connect # %` in the channel you want where # is the minimum rs level of your server and % is the maximum (i.e. `!connect 5 9`) and just like that you'll be connected to The Clubs!")
                 await channel.send(f"NOTE: The `!connect # %` command can ONLY be run by an administrator of this server.")
                 break
 
@@ -228,25 +228,28 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     async def current(self, ctx):
         async with sessionmaker() as session:
             server = await session.get(ExternalServer, ctx.guild.id)
-            rs_types = ["rs", "rs_34", "rs_silent"]
-            role_ids = [(i, (rs[:2].upper() + str(i) + (" 3/4" if rs == "rs_34" else " silent" if rs == "rs_silent" else "")), getattr(server, (rs[:2] + str(i) + rs[2:]))) for rs in rs_types for i in range(5,12)]
-            print_str = "Below is what roles are currently set up on this server. If you want to add more, use the `!level` command:\n```"
-            print_str += f"Min RS: rs{server.min_rs}\n"
-            role_ids = [sub for sub in role_ids if not sub[2] == None if not sub[2] == 0]
-            role_ids.sort()
-            longest = 0
-            for sub in role_ids:
-                if longest < len(sub[1]):
-                    longest = len(sub[1])
-            for (id, level, role) in role_ids:
-                if role is not None or int(role) != 0:
-                    full_role = discord.utils.get(ctx.guild.roles, id=role)
-                    #print_str += f"{level} | {full_role.name}\n"
-                    print_str += f"{level}"
-                    print_str += " "*(longest-len(level)) + " | "
-                    print_str += full_role.name + "\n"
-            print_str += f"Max RS: rs{server.max_rs} ```"
-            await ctx.send(print_str)
+            if server is not None:
+                rs_types = ["rs", "rs_34", "rs_silent"]
+                role_ids = [(i, (rs[:2].upper() + str(i) + (" 3/4" if rs == "rs_34" else " silent" if rs == "rs_silent" else "")), getattr(server, (rs[:2] + str(i) + rs[2:]))) for rs in rs_types for i in range(5,12)]
+                print_str = "Below is what roles are currently set up on this server. If you want to add more, use the `!level` command:\n```"
+                print_str += f"Min RS: rs{server.min_rs}\n"
+                role_ids = [sub for sub in role_ids if not sub[2] == None if not sub[2] == 0]
+                role_ids.sort()
+                longest = 0
+                for sub in role_ids:
+                    if longest < len(sub[1]):
+                        longest = len(sub[1])
+                for (id, level, role) in role_ids:
+                    if role is not None or int(role) != 0:
+                        full_role = discord.utils.get(ctx.guild.roles, id=role)
+                        #print_str += f"{level} | {full_role.name}\n"
+                        print_str += f"{level}"
+                        print_str += " "*(longest-len(level)) + " | "
+                        print_str += full_role.name + "\n"
+                print_str += f"Max RS: rs{server.max_rs} ```"
+                await ctx.send(print_str)
+            else:
+                await ctx.send("This server is currently not connected to the clubs")
 
     @commands.command()
     @has_permissions(manage_roles=True)

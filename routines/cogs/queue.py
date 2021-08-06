@@ -198,27 +198,23 @@ class RSQueue(commands.Cog, name='Queue'):
                         add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                         session.add(add_temp)
                         await session.commit()
-                elif minutes >= queue.length + 5:
+                elif minutes >= queue.length + 1:
                         User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
                         channel = await self.bot.fetch_channel(queue.channel_id)
                         count = await self.amount(queue.level)
+                        temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id, queue.level))
+                        message = await channel.fetch_message(temp_access.message_id)
+                        await message.delete()
+                        await session.delete(temp_access)
                         await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                         servers = (await session.execute(select(ExternalServer))).scalars()
                         for server in servers:
                             if server.min_rs <= queue.level <= server.max_rs:
                                 channel = await self.bot.fetch_channel(server.channel_id)
                                 await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
-                        conditions = and_(Temp.user_id == queue.user_id, Temp.level == queue.level)
-                        id = (await session.execute(select(Temp).where(conditions))).scalars()
-                        for i in id:
-                            if i.channel_id == queue.channel_id:
-                                message = await channel.fetch_message(i.message_id)
-                                await message.delete()
-                        conditions = and_(Temp.server_id == queue.server_id, Temp.user_id == queue.user_id, Temp.level == queue.level)
-                        await session.execute(delete(Temp).where(conditions))
-                        await session.commit()
+                        
             await session.commit()
         
     async def right_channel(self, ctx):
