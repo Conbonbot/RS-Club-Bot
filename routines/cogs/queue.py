@@ -486,6 +486,24 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send(f"{ctx.author.mention}, you are requeued for a {rs_level}! {num_players}")
             await session.commit()
 
+    @commands.command()
+    async def reset(self, ctx, level=None):
+        if level is None:
+            await ctx.send("Please specify an rs level")
+        else:
+            count = await self.count(int(level))
+            if count > 3:
+                async with sessionmaker() as session:
+                    users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
+                    for user in users:
+                        await session.delete(user)
+                    await session.commit()
+                await ctx.send("The queue has been reset")
+            else:
+                await ctx.send("The queue is not stuck at 4/4")
+
+
+
     @commands.command(pass_context=True)
     async def corp(self, ctx, *corp):
         member = await ctx.guild.fetch_member(ctx.author.id)
