@@ -190,33 +190,55 @@ class RSQueue(commands.Cog, name='Queue'):
                     # Ping the user
                         user = await self.bot.fetch_user(queue.user_id)
                         channel = await self.bot.fetch_channel(queue.channel_id)
-                        message = await channel.send(
-                            f"{user.mention}, still in for a RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
+                        message = await channel.send(f"{user.mention}, still in for a RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
                         await message.add_reaction('✅')
                         await message.add_reaction('❌')
                         # Add their user_id and message_id to database
                         add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                         session.add(add_temp)
                         await session.commit()
-                elif minutes >= queue.length + 1:
+                elif minutes >= queue.length + 5:
+                        # Get user and delete them from the queue database
                         User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
                         await session.delete(User_leave)
                         await session.commit()
+                        # get channel and send leaving message to all servers
                         channel = await self.bot.fetch_channel(queue.channel_id)
                         count = await self.amount(queue.level)
-                        temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id, queue.level))
-                        message = await channel.fetch_message(temp_access.message_id)
-                        await message.delete()
-                        await session.delete(temp_access)
                         await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                         servers = (await session.execute(select(ExternalServer))).scalars()
                         for server in servers:
                             if server.min_rs <= queue.level <= server.max_rs:
                                 channel = await self.bot.fetch_channel(server.channel_id)
                                 await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
-                        
+                        # Remove 'still in for a...' message (if it works)
+                        temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id, queue.level))
+                        message = await channel.fetch_message(temp_access.message_id)
+                        await message.delete()
+                        await session.delete(temp_access)
             await session.commit()
         
+    @commands.command()
+    async def find(self, ctx):
+        messages = []
+        async with sessionmaker() as session:
+            results = (await session.execute(select(Temp))).scalars()
+            for temp in results:
+                channel = await self.bot.fetch_channel(temp.channel_id)
+                try:
+                    message = await channel.fetch_message(temp.message_id)
+                    await message.delete()
+                    messages.append(await ctx.send("Message deleted"))
+                except:
+                    messages.append(await ctx.send(f"Message not found with id of {temp.message_id}"))
+                finally:
+                    await session.delete(temp)
+                    await session.commit()
+        await asyncio.sleep(5)
+        for message in messages:
+            await message.delete()
+        
+
     async def right_channel(self, ctx):
         right_channel = False
         channel = ""
@@ -445,6 +467,8 @@ class RSQueue(commands.Cog, name='Queue'):
             if not TESTING:
                 channel = await self.bot.fetch_channel(858406227523403776)
                 await channel.send(embed=check_embed)
+
+
     
     @commands.command()
     @commands.has_role("mod")
@@ -463,17 +487,6 @@ class RSQueue(commands.Cog, name='Queue'):
         await asyncio.sleep(10)
         await ctx.message.delete()
         await message.delete()
-
-    @commands.command()
-    async def test(self, ctx):
-        async with sessionmaker() as session:
-            servers = (await session.execute(select(ExternalServer))).scalars()
-        for server in servers:
-            await ctx.send(server.server_id)
-        await ctx.send(servers)
-        for server in servers:
-            await ctx.send(server.server_id)
-
 
     @commands.command(aliases=["r", "^", "staying"])
     async def refresh(self, ctx):
@@ -951,7 +964,10 @@ class RSQueue(commands.Cog, name='Queue'):
                         rs_level = "rs" + str(level) + "_silent"
                         role_id = getattr(server, rs_level)
                 role = discord.utils.get(guild.roles, id=role_id)
-                queue_embed = discord.Embed(color=role.color, title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
+                if role is not None:
+                    queue_embed = discord.Embed(color=role.color, title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
+                else:
+                    queue_embed = discord.Embed(color=discord.Color.red(), title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
                 await channel.send(embed=queue_embed)
             else:
                 if display:
