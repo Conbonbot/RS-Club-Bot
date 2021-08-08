@@ -71,6 +71,35 @@ class RSRole(commands.Cog, name='Role'):
                 count += int(person.amount)
             return count
 
+    async def find(self, selection, id):
+        # gets user, channel, guild
+        await self.bot.wait_until_ready()
+        selection = selection.lower()
+        if selection in ("u", "user", "users"):
+            user = self.bot.get_user(id)
+            if user is None:
+                try:
+                    user = await self.bot.fetch_user(id)
+                except:
+                    user = -1
+            return user
+        elif selection in ("c", "channel", "channels"):
+            channel = self.bot.get_channel(id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(id)
+                except:
+                    channel = -1
+            return channel
+        elif selection in ("g", "guild", "guilds"):
+            guild = self.bot.get_guild(id)
+            if guild is None:
+                try:
+                    guild = await self.bot.fetch_guild(id)
+                except:
+                    guild = -1
+            return guild
+
     # TODO: work on the commands below
 
     @commands.command()
@@ -255,7 +284,7 @@ class RSRole(commands.Cog, name='Role'):
                         if payload.guild_id == clubs_server_id:
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                         else:
                             async with sessionmaker() as session:
@@ -263,7 +292,7 @@ class RSRole(commands.Cog, name='Role'):
                                 rs_str = "rs" + rs_role
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue of this red star level.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
                     else:
                         if payload.guild_id == clubs_server_id:
@@ -296,7 +325,7 @@ class RSRole(commands.Cog, name='Role'):
                         if payload.guild_id == clubs_server_id:
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue of this red star level hits 3/4.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
                         else:
                             async with sessionmaker() as session:
@@ -304,7 +333,7 @@ class RSRole(commands.Cog, name='Role'):
                                 rs_str = "rs" + rs_role + "_34"
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue a queue of this red star level hits 3/4.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
                     else:
                         if payload.guild_id == clubs_server_id:
@@ -338,7 +367,7 @@ class RSRole(commands.Cog, name='Role'):
                         if payload.guild_id == clubs_server_id:
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
                             await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to hide the hide the rs channels, type !rsc to hide them, and type !rsc to see them again.")
                         else:
                             async with sessionmaker() as session:
@@ -346,7 +375,7 @@ class RSRole(commands.Cog, name='Role'):
                                 rs_str = "rs" + rs_role + "_silent"
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.bot.fetch_channel(payload.channel_id)
+                            channel = await self.find('c', payload.channel_id)
                             welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged ONLY when a queue you've joined hits 4/4.\nEnjoy your stay.")
                     else:
                         if payload.guild_id == clubs_server_id:
@@ -374,52 +403,55 @@ class RSRole(commands.Cog, name='Role'):
                 if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
                     if str(payload.emoji) == '✅':
                         async with sessionmaker() as session:
-                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
+                            # Get user and update timestamp
+                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
                             user.time = int(time.time())
                             level = user.level
                             amount = user.amount
                             queue_user = await session.get(Queue, (payload.user_id, amount, level))
                             queue_user.time = int(time.time())
                             await session.commit()
-                            channel = await self.bot.fetch_channel(payload.channel_id)
-                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            # Send a requeued message
+                            channel = await self.find('c', payload.channel_id)
+                            message = channel.fetch_message(payload.message_id)
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
-                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
+                            # Delete them from the temp database
+                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
                             await session.delete(user)
                             await session.commit()
                     elif str(payload.emoji) == '❌':
                         async with sessionmaker() as session:
                             # Get the channel and message
-                            channel = await self.bot.fetch_channel(payload.channel_id)
-                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                            # REmove the reaction and the message
+                            channel = await self.find('c', payload.channel_id)
+                            message = channel.fetch_message(payload.message_id)
+                            # Remove the reaction and the message
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             # Get the user from the temp database
-                            user = (await session.get(Temp, ( payload.channel_id, payload.user_id, payload.message_id)))
+                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
                             amount = user.amount
                             level = user.level
                             # Kick the user from the queue 
                             User_leave = (await session.get(Queue, (payload.user_id, amount, level)))
-                            count = await self.amount(level)
+                            count = (await self.amount(level))-1
                             await channel.send(f"{User_leave.nickname} has left RS{level} ({count}/4)")
                             servers = (await session.execute(select(ExternalServer))).scalars()
                             for server in servers:
                                 if server.min_rs <= User_leave.level <= server.max_rs:
-                                    channel = await self.bot.fetch_channel(server.channel_id)
+                                    channel = await self.find('c', server.channel_id)
                                     await channel.send(f"{User_leave.nickname} has left RS{User_leave.level} ({count}/4)")
                             await session.delete(User_leave)
                             await session.commit()
                             # Remove them from the temp database
-                            user = await session.get(Temp, (payload.channel_id, payload.user_id, payload.message_id))
+                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
                             await session.delete(user)
                             await session.commit()
                     elif(int(payload.member.id) != self.bot.user.id):
                         message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                         await message.remove_reaction(str(payload.emoji), payload.member)
-                        channel = await self.bot.fetch_channel(payload.channel_id)
+                        channel = await self.find('c', payload.channel_id)
                         await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
         
                     

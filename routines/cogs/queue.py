@@ -16,12 +16,18 @@ from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy import delete
 from sqlalchemy import and_
+from sqlalchemy.orm import session
 from sqlalchemy.sql.expression import insert
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy import inspect
 from sqlalchemy import event
 
 from random import random
+
+from discord import Embed
+from discord_slash import cog_ext, SlashContext
+
+
 
 from bot import LOGGER
 from bot import TESTING
@@ -181,6 +187,36 @@ class RSQueue(commands.Cog, name='Queue'):
             data =  int((time.time() - int(person.time)) / 60)
             return data
 
+    async def find(self, selection, id):
+        # gets user, channel, guild
+        await self.bot.wait_until_ready()
+        selection = selection.lower()
+        if selection in ("u", "user", "users"):
+            user = self.bot.get_user(id)
+            if user is None:
+                try:
+                    user = await self.bot.fetch_user(id)
+                except:
+                    user = -1
+            return user
+        elif selection in ("c", "channel", "channels"):
+            channel = self.bot.get_channel(id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(id)
+                except:
+                    channel = -1
+            return channel
+        elif selection in ("g", "guild", "guilds"):
+            guild = self.bot.get_guild(id)
+            if guild is None:
+                try:
+                    guild = await self.bot.fetch_guild(id)
+                except:
+                    guild = -1
+            return guild
+
+    # TODO: Find primary keys for temp database
     async def check(self):
         async with sessionmaker() as session:
             results = (await session.execute(select(Queue))).scalars()
@@ -188,55 +224,42 @@ class RSQueue(commands.Cog, name='Queue'):
                 minutes = int((time.time() - queue.time) / 60)
                 if minutes == queue.length:
                     # Ping the user
-                        user = await self.bot.fetch_user(queue.user_id)
-                        channel = await self.bot.fetch_channel(queue.channel_id)
-                        message = await channel.send(f"{user.mention}, still in for a RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
-                        await message.add_reaction('✅')
-                        await message.add_reaction('❌')
-                        # Add their user_id and message_id to database
-                        add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
-                        session.add(add_temp)
-                        await session.commit()
-                elif minutes >= queue.length + 5:
-                        # Get user and delete them from the queue database
-                        User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
-                        await session.delete(User_leave)
-                        await session.commit()
-                        # get channel and send leaving message to all servers
-                        channel = await self.bot.fetch_channel(queue.channel_id)
-                        count = await self.amount(queue.level)
-                        await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
-                        servers = (await session.execute(select(ExternalServer))).scalars()
-                        for server in servers:
-                            if server.min_rs <= queue.level <= server.max_rs:
-                                channel = await self.bot.fetch_channel(server.channel_id)
-                                await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
-                        # Remove 'still in for a...' message (if it works)
-                        temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id, queue.level))
-                        message = await channel.fetch_message(temp_access.message_id)
-                        await message.delete()
-                        await session.delete(temp_access)
-            await session.commit()
-        
-    @commands.command()
-    async def find(self, ctx):
-        messages = []
-        async with sessionmaker() as session:
-            results = (await session.execute(select(Temp))).scalars()
-            for temp in results:
-                channel = await self.bot.fetch_channel(temp.channel_id)
-                try:
-                    message = await channel.fetch_message(temp.message_id)
-                    await message.delete()
-                    messages.append(await ctx.send("Message deleted"))
-                except:
-                    messages.append(await ctx.send(f"Message not found with id of {temp.message_id}"))
-                finally:
-                    await session.delete(temp)
+                    user = await self.find('u', queue.user_id)
+                    channel = await self.find('c', queue.channel_id)
+                    message = await channel.send(f"{user.mention}, still in for a RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
+                    await message.add_reaction('✅')
+                    await message.add_reaction('❌')
+                    # Add their user_id and message_id to database
+                    add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
+                    session.add(add_temp)
                     await session.commit()
-        await asyncio.sleep(5)
-        for message in messages:
-            await message.delete()
+                elif minutes >= queue.length + 5:
+                    # Get user and delete them from the queue database
+                    User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
+                    await session.delete(User_leave)
+                    await session.commit()
+                    # get channel and send leaving message to all servers
+                    channel = await self.find('c', queue.channel_id)
+                    count = await self.amount(queue.level)
+                    await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
+                    servers = (await session.execute(select(ExternalServer))).scalars()
+                    for server in servers:
+                        if server.min_rs <= queue.level <= server.max_rs:
+                            channel = await self.find('c', server.channel_id)
+                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
+                    # Remove 'still in for a...' message (if it works)
+                    temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
+                    channel = await self.find('c', temp_access.channel_id)
+                    message = await channel.fetch_message(temp_access.message_id)
+                    await message.delete()
+                    await session.delete(temp_access)
+            await session.commit()
+            
+
+    @cog_ext.cog_slash(name="test")
+    async def _test(self, ctx: SlashContext):
+        embed = Embed(title="Embed Test")
+        await ctx.send(embed=embed)
         
 
     async def right_channel(self, ctx):
@@ -282,12 +305,12 @@ class RSQueue(commands.Cog, name='Queue'):
                     server_user_ids.append((person.server_id, person.user_id))
                 else:
                     club = 1
-                    clubs_string_people += (await self.bot.fetch_user(person.user_id)).mention + " "
-                print_people.append((await self.bot.fetch_user(person.user_id)).display_name)
+                    clubs_string_people += (await self.find('u', person.user_id)).mention + " "
+                print_people.append(person.nickname)
         print_people = list(set(print_people))
         connecting_servers = set(external_server_ids)
-        club_channel = await self.bot.fetch_channel(self.club_channels[level])
-        club_guild = await self.bot.fetch_guild(clubs_server_id)
+        club_channel = await self.find('c',self.club_channels[level])
+        club_guild = await self.find('g', clubs_server_id)
         if club == 1:
             # Print queue to clubs server
             await self.print_queue(club_guild, club_channel, level)
@@ -313,7 +336,7 @@ class RSQueue(commands.Cog, name='Queue'):
         for server_user in total_list:
             print_str = ""
             for user in server_user[1:]:
-                print_str += (await self.bot.fetch_user(user)).mention + " "
+                print_str += (await self.find('u', user)).mention + " "
             total_str_people.append((server_user[0], print_str))
         async with sessionmaker() as session:
             servers = (await session.execute(select(ExternalServer))).scalars()
@@ -321,12 +344,12 @@ class RSQueue(commands.Cog, name='Queue'):
                 # Tell servers the queue has been filled
                 if server.server_id not in connecting_servers:
                     if server.min_rs <= level <= server.max_rs:
-                        channel = await self.bot.fetch_channel(server.channel_id)
+                        channel = await self.find('c', server.channel_id)
                         await channel.send(f"```The RS{level} queue has been filled.```")
                 # Print queue to servers who had players in that queue
                 else:
-                    channel = await self.bot.fetch_channel(server.channel_id)
-                    guild = await self.bot.fetch_guild(server.server_id)
+                    channel = await self.find('c', server.channel_id)
+                    guild = await self.find('g', server.server_id)
                     try:
                         server_ids = [tup[0] for tup in total_str_people]
                         index = server_ids.index(server.server_id)
@@ -375,10 +398,9 @@ class RSQueue(commands.Cog, name='Queue'):
             for person in queue_people:
                 await session.delete(person)
             await session.commit()
-        try:
-            rs_log_channel = await self.bot.fetch_channel(805228742678806599)
-        except:
-            rs_log_channel = await self.bot.fetch_channel(806370539148541952)
+        rs_log_channel = await self.find('c', 805228742678806599)
+        if rs_log_channel == -1:
+            rs_log_channel = await self.find('c', 806370539148541952)
         formated_date = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         await rs_log_channel.send(f"RS{level} Started at {formated_date} PST \nUsers: {', '.join(print_people)}")
 
@@ -386,8 +408,8 @@ class RSQueue(commands.Cog, name='Queue'):
         # Print to clubs server
         name = ctx.author.display_name
         count = await self.amount(level)
-        guild = await self.bot.fetch_guild(clubs_server_id)
-        channel = await self.bot.fetch_channel(self.club_channels[level])
+        guild = await self.find('g', clubs_server_id)
+        channel = await self.find('c', self.club_channels[level])
         await self.print_queue(guild, channel, level)
         if count == 3:
             await channel.send(f"{name} joined {self.rs_ping_1more[f'RS{level}']} ({count}/4)")
@@ -398,8 +420,8 @@ class RSQueue(commands.Cog, name='Queue'):
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
                 if level <= server.max_rs:
-                    guild = await self.bot.fetch_guild(server.server_id)
-                    channel = await self.bot.fetch_channel(server.channel_id)
+                    guild = await self.find('g', server.server_id)
+                    channel = await self.find('c', server.channel_id)
                     await self.print_queue(guild, channel, level)
                     rs_level = "rs" + str(level)
                     rs_level_34 = "rs" + str(level) + "_34"
@@ -424,8 +446,8 @@ class RSQueue(commands.Cog, name='Queue'):
 
     async def leaving_queue(self, ctx, level):
         # Print info in clubs server
-        guild = await self.bot.fetch_guild(clubs_server_id)
-        channel = await self.bot.fetch_channel(self.club_channels[level])
+        guild = await self.find('g', clubs_server_id)
+        channel = await self.find('c', self.club_channels[level])
         await self.print_queue(guild, channel, level, False)
         await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
         # Print queues to other servers
@@ -433,8 +455,8 @@ class RSQueue(commands.Cog, name='Queue'):
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
                 if server.min_rs <= level <= server.max_rs:
-                    guild = await self.bot.fetch_guild(server.server_id)
-                    channel = await self.bot.fetch_channel(server.channel_id)
+                    guild = await self.find('g', server.server_id)
+                    channel = await self.find('c', server.channel_id)
                     await self.print_queue(guild, channel, level, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
 
@@ -465,10 +487,20 @@ class RSQueue(commands.Cog, name='Queue'):
                 check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
         finally:
             if not TESTING:
-                channel = await self.bot.fetch_channel(858406227523403776)
+                channel = await self.find('c', 858406227523403776)
                 await channel.send(embed=check_embed)
 
 
+    @commands.command()
+    async def add_bot(self, ctx, level, amount):
+        if TESTING:
+            async with sessionmaker() as session:
+                user = Queue(server_id=ctx.guild.id, user_id=809871917946634261, amount=int(amount), level=int(level), time=int(time.time()), length=60, channel_id=ctx.channel.id, nickname="RS Club Temp Bot")
+                session.add(user)
+                await session.commit()
+            await ctx.send("Added")
+        else:
+            await ctx.send("This command can only be used in testing")
     
     @commands.command()
     @commands.has_role("mod")
@@ -739,8 +771,8 @@ class RSQueue(commands.Cog, name='Queue'):
             for server in servers:
                 level = self.rs_channel[str(ctx.message.channel)]
                 if level <= server.max_rs:
-                    guild = await self.bot.fetch_guild(server.server_id)
-                    channel = await self.bot.fetch_channel(server.channel_id)
+                    guild = await self.find('g', server.server_id)
+                    channel = await self.find('c', server.channel_id)
                     await self.print_queue(guild, channel, level, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
 
@@ -924,7 +956,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 user_ids = []
                 list_people = []
                 for person in (await session.execute(select(Queue).where(Queue.level == level))).scalars():
-                    user = await self.bot.fetch_user(person.user_id)
+                    user = await self.find('u', person.user_id)
                     user_ids.append(user.id)
                     list_people.append(person.nickname)
                     users_mods = (await session.get(Data, person.user_id))

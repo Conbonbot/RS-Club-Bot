@@ -99,6 +99,35 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 11 : 798387540910276628,
             }
 
+    async def find(self, selection, id):
+        # gets user, channel, guild
+        await self.bot.wait_until_ready()
+        selection = selection.lower()
+        if selection in ("u", "user", "users"):
+            user = self.bot.get_user(id)
+            if user is None:
+                try:
+                    user = await self.bot.fetch_user(id)
+                except:
+                    user = -1
+            return user
+        elif selection in ("c", "channel", "channels"):
+            channel = self.bot.get_channel(id)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(id)
+                except:
+                    channel = -1
+            return channel
+        elif selection in ("g", "guild", "guilds"):
+            guild = self.bot.get_guild(id)
+            if guild is None:
+                try:
+                    guild = await self.bot.fetch_guild(id)
+                except:
+                    guild = -1
+            return guild
+
     async def queue_time(self, user_id, amount, level):
         async with sessionmaker.begin() as session:
             person = (await session.get(Queue, (user_id, amount, level)))
@@ -316,9 +345,12 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     level_role = getattr(server, "rs" + str(level))
                     if level_role is not None:
                         role_ids = []
-                        for i in range(5,12):
-                            if getattr(server, "rs" + str(i)) is not None:
-                                role_ids.append((i, getattr(server, "rs" + str(i))))
+                        role_types = ["rs", "rs_34", "rs_silent"]
+                        for role in role_types:
+                            for i in range(5,12):
+                                check_role = role[:2] + str(i) + role[2:]
+                                if getattr(server, check_role) is not None:
+                                    role_ids.append((i, getattr(server, check_role)))
                         role_ids = role_ids[::-1]
                         confirmed_roles = []
                         has_role = False
@@ -369,8 +401,10 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 list_servers = [server.channel_id for server in servers]
                 list_servers = list(set(list_servers))
                 for server in list_servers:
-                    channel = await self.bot.fetch_channel(server)
+                    channel = await self.find('c', server)
                     await channel.send(f"```The connection has been closed by {ctx.author.display_name}.```")
+                servers = (await session.execute(select(Talking).where(Talking.run_id == run_id))).scalars()
+                for server in servers:
                     await session.delete(server)
             await session.commit()
 
@@ -421,7 +455,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                             for webhook_url, server_id in total_stuff:
                                 if server_id != message.guild.id:
                                     # Send the message with webhooks
-                                    user = await self.bot.fetch_user(message.author.id)
+                                    user = await self.find('u', message.author.id)
                                     async with aiohttp.ClientSession() as session:
                                         webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(session))
                                         if len(message.attachments) == 0:
@@ -455,7 +489,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     new_name = ctx.channel.name + " enabled"
                     await ctx.channel.edit(name=new_name)
                 for name in server_info:
-                    channel = await self.bot.fetch_channel(name)
+                    channel = await self.find('c', name)
                     await channel.send(f"{ctx.guild.name} has joined global chat, current (other) servers with global chat enabled: {global_active_servers}")
 
         else:
@@ -485,7 +519,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         server_info.append(server.channel_id)
                 print("SERVER INFO", server_info)
                 for name in server_info:
-                    channel = await self.bot.fetch_channel(name)
+                    channel = await self.find('c', name)
                     await channel.send(f"{ctx.guild.name} has left global chat, current servers with global chat enabled: {global_active_servers}")
         else:
             await ctx.send("global chat is already disabled. To turn it on run `!startglobal`")

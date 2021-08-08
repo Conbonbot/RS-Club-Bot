@@ -46,7 +46,7 @@ class Temp(Base):
     user_id = Column(BigInteger, primary_key=True)
     message_id = Column(BigInteger)
     amount = Column(SmallInteger)
-    level = Column(SmallInteger, primary_key=True)
+    level = Column(SmallInteger)
 
 class ExternalServer(Base):
     __tablename__ = 'externalserver'
