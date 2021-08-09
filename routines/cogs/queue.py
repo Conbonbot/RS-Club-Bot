@@ -47,7 +47,7 @@ rs_club_webhooks = {
     "10" : os.getenv("RS10_WEBHOOK"),
     "11" : os.getenv("RS11_WEBHOOK")
 }
-guild_ids = [805959424081920022]
+
 
 from routines.tables import Queue, Data, Temp, Stats, Event, ExternalServer, Talking
 from routines import sessionmaker
@@ -56,8 +56,10 @@ import random
 
 if TESTING:
     clubs_server_id = 805959424081920022
+    guild_ids = [805959424081920022]
 else:
     clubs_server_id = 682479756104564775
+    guild_ids = [682479756104564775, 392546441853403136]
 
 # TODO: Use an actual settings file for these and channel/message ids.
 RS_GROUPS = {
