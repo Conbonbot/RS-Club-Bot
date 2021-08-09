@@ -413,7 +413,7 @@ class RSRole(commands.Cog, name='Role'):
                             await session.commit()
                             # Send a requeued message
                             channel = await self.find('c', payload.channel_id)
-                            message = channel.fetch_message(payload.message_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
@@ -425,7 +425,7 @@ class RSRole(commands.Cog, name='Role'):
                         async with sessionmaker() as session:
                             # Get the channel and message
                             channel = await self.find('c', payload.channel_id)
-                            message = channel.fetch_message(payload.message_id)
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
                             # Remove the reaction and the message
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
