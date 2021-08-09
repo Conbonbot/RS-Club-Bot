@@ -93,5 +93,4 @@ if __name__ == '__main__':
         case_insensitive=True,
         help_command=None
     )
-    slash = SlashCommand(commands.Bot(token=TOKEN), sync_commands=True)
     bot.run(TOKEN)

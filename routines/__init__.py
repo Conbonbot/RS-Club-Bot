@@ -13,6 +13,7 @@ from sqlalchemy.engine.url import URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker as maker
 import asyncio
+from discord_slash import SlashCommand, SlashContext
 
 postgres_URL = URL.create('postgresql+asyncpg',
                           database=os.getenv('DATABASE'),
@@ -42,6 +43,7 @@ def setup_coroutines(bot: commands.bot):
     """Main entrypoint to dynamically configure bot routines."""
     LOGGER.debug('Registering co-routines.')
     on_ready_setup(bot)
+    slash_command_setup(bot)
     command_setup(bot)
     cog_setup(bot)
 
@@ -53,6 +55,10 @@ def on_ready_setup(bot: commands.bot):
         LOGGER.debug(f'Registering event: {event.__name__}')
         setup = event(bot)
         setup.actions()
+
+def slash_command_setup(bot: commands.bot):
+    """Configures Slash Command Setup"""
+    slash = SlashCommand(bot, sync_commands=True)
 
 
 def command_setup(bot: commands.bot):

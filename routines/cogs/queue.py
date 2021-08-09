@@ -26,10 +26,11 @@ from random import random
 
 from discord import Embed
 from discord_slash import cog_ext, SlashContext
+from discord_slash.utils.manage_commands import create_option, create_choice
 
 
 
-from bot import LOGGER
+from bot import LOGGER, RSClubBot
 from bot import TESTING
 
 import sys, os
@@ -46,6 +47,7 @@ rs_club_webhooks = {
     "10" : os.getenv("RS10_WEBHOOK"),
     "11" : os.getenv("RS11_WEBHOOK")
 }
+guild_ids = [805959424081920022]
 
 from routines.tables import Queue, Data, Temp, Stats, Event, ExternalServer, Talking
 from routines import sessionmaker
@@ -156,6 +158,29 @@ class RSQueue(commands.Cog, name='Queue'):
                 11 : 798387540910276628,
             }
 
+    # TODO: slash command testing
+    @cog_ext.cog_slash(
+        name="display_queue",
+        description="Displays the queue of a specific rs level",
+        options=[
+            create_option(
+                name="level",
+                description="The rs level",
+                option_type=4,
+                required=True
+            )
+        ],
+        guild_ids=guild_ids
+    )
+    async def display_queue(self, ctx: SlashContext, level: int):
+        if 5 <= level <= 11:
+            embed = await self.print_queue(ctx.guild, ctx.channel, level, display=False, slash=True)
+            if embed is None:
+                await ctx.send(f"No RS{level} Queues found, you can start one by typing `!in {level}`", hidden=True)
+            else:
+                await ctx.send(embed=embed, hidden=True)
+        else:
+            await ctx.send(f"RS{level} not found. specify a level between 5 and 11", hidden=True)
 
 
     async def generate_run_id(self, event=False):
@@ -254,13 +279,6 @@ class RSQueue(commands.Cog, name='Queue'):
                     await message.delete()
                     await session.delete(temp_access)
             await session.commit()
-            
-
-    @cog_ext.cog_slash(name="test")
-    async def _test(self, ctx: SlashContext):
-        embed = Embed(title="Embed Test")
-        await ctx.send(embed=embed)
-        
 
     async def right_channel(self, ctx):
         right_channel = False
@@ -927,7 +945,7 @@ class RSQueue(commands.Cog, name='Queue'):
         else:
             await self.print_queue(ctx.guild, ctx.channel, int(level))
 
-    async def print_queue(self, guild, channel, level, display=True):
+    async def print_queue(self, guild, channel, level, display=True, slash=False):
         extras = {
             'croid': discord.utils.get(self.bot.emojis, name='croid'),
             'influence': discord.utils.get(self.bot.emojis, name='influence'),
@@ -1003,7 +1021,10 @@ class RSQueue(commands.Cog, name='Queue'):
                     queue_embed = discord.Embed(color=role.color, title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
                 else:
                     queue_embed = discord.Embed(color=discord.Color.red(), title=f"The Current RS{level} Queue ({await self.amount(level)}/4)", description=str_people)
-                await channel.send(embed=queue_embed)
+                if not slash:
+                    await channel.send(embed=queue_embed)
+                else:
+                    return queue_embed
             else:
                 if display:
                     await channel.send(f"No RS{level} Queues found, you can start one by typing `!in {level}`")
