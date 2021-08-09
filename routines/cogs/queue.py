@@ -412,7 +412,7 @@ class RSQueue(commands.Cog, name='Queue'):
         channel = await self.find('c', self.club_channels[level])
         await self.print_queue(guild, channel, level)
         if count == 3:
-            await channel.send(f"{name} joined {self.rs_ping_1more[f'RS{level}']} ({count}/4)")
+            await channel.send(f"{name} joined {self.rs_ping_1more[f'RS{level}']} {self.rs_ping[f'RS{level}']} ({count}/4)")
         else:
             await channel.send(f"{name} joined {self.rs_ping[f'RS{level}']} ({count}/4)")
         # Print queues to other servers
@@ -435,7 +435,10 @@ class RSQueue(commands.Cog, name='Queue'):
                             print_str += f"\nNo roles were found for rs{level} 3/4, specify them with the `!level` command."
                             await channel.send(print_str)
                         else:
-                            await channel.send(f"{name} joined {role_34.mention} ({count}/4)")
+                            if role is None:
+                                await channel.send(f"{name} joined {role_34.mention} ({count}/4)")
+                            else:
+                                await channel.send(f"{name} joined {role_34.mention} {role.mention} ({count}/4)")
                     else:
                         if role is None:
                             print_str = f"{name} joined rs{level} ({count}/4)"
