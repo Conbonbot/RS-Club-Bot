@@ -417,52 +417,53 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
         # author=<Member id=384481151475122179 name='Conbonbot' discriminator='0680' bot=False nick=None guild=<Guild id=858484643632381952 name='Testing Server' shard_id=None chunked=False member_count=2>> flags=<MessageFlags value=0>>
 
         # See if the talking database has anything in it
-        active_global = False
-        async with sessionmaker() as session:
-            data_check = (await session.execute(select(Talking))).scalars()
-            if data_check is not None:
-                active_global = True
-        if active_global:
-            total_info = []
-            total_servers = []
-            club_server_info = ()
+        if not message.author.bot:
+            active_global = False
             async with sessionmaker() as session:
-                current_talking = (await session.execute(select(Talking))).scalars()
-                for user in current_talking:
-                    total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
-                    total_servers.append(user.server_id)
-                    if user.server_id == clubs_server_id:
-                        club_server_info = (user.server_id, user.user_id, user.channel_id, user.timestamp)
-            total_servers = list(set(total_servers))
-            # TOTAL INFO -> SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
-            # Check if the message was sent from the select people and in the right channel
-            if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:
-                if not message.author.bot:
-                    if not (message.content.startswith('!') or message.content.startswith('+') or message.content.startswith('-') or message.content.startswith('%')):
-                        # cut out bot messages and commands
-                        async with sessionmaker() as session:
-                            total_stuff = []
-                            print("Total server data", total_servers)
-                            for data in total_servers:
-                                if data == clubs_server_id:
-                                    print("CLUBS", clubs_server_id)
-                                    rs_level = (await session.get(Stats, (club_server_info[1], club_server_info[3]))).rs_level
-                                    clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
-                                    total_stuff.append((os.getenv(clubs_webhook_string), data))
-                                else:
-                                    server = await session.get(ExternalServer, data)
-                                    total_stuff.append((server.webhook, data))
-                            for webhook_url, server_id in total_stuff:
-                                if server_id != message.guild.id:
-                                    # Send the message with webhooks
-                                    user = await self.find('u', message.author.id)
-                                    async with aiohttp.ClientSession() as session:
-                                        webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(session))
-                                        if len(message.attachments) == 0:
-                                            await webhook.send(message.content, username=message.author.display_name, avatar_url=str(user.avatar_url))
-                                        else:
-                                            for attachment in message.attachments:
-                                                await webhook.send(content=None, username=message.author.display_name, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
+                data_check = (await session.execute(select(Talking))).scalars()
+                if data_check is not None:
+                    active_global = True
+            if active_global:
+                total_info = []
+                total_servers = []
+                club_server_info = ()
+                async with sessionmaker() as session:
+                    message_run_id = (await session.get(Talking, message.author.id)).run_id
+                    current_talking = (await session.execute(select(Talking).where(Talking.run_id == message_run_id))).scalars()
+                    for user in current_talking:
+                        total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
+                        total_servers.append(user.server_id)
+                        if user.server_id == clubs_server_id:
+                            club_server_info = (user.server_id, user.user_id, user.channel_id, user.timestamp)
+                total_servers = list(set(total_servers))
+                # TOTAL INFO -> RUN_ID, SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
+                # Check if the message was sent from the select people and in the right channel
+                if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:
+                        if not (message.content.startswith('!') or message.content.startswith('+') or message.content.startswith('-') or message.content.startswith('%')):
+                            # cut out bot messages and commands
+                            async with sessionmaker() as session:
+                                total_stuff = []
+                                print("Total server data", total_servers)
+                                for data in total_servers:
+                                    if data == clubs_server_id:
+                                        print("CLUBS", clubs_server_id)
+                                        rs_level = (await session.get(Stats, (club_server_info[1], club_server_info[3]))).rs_level
+                                        clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
+                                        total_stuff.append((os.getenv(clubs_webhook_string), data))
+                                    else:
+                                        server = await session.get(ExternalServer, data)
+                                        total_stuff.append((server.webhook, data))
+                                for webhook_url, server_id in total_stuff:
+                                    if server_id != message.guild.id:
+                                        # Send the message with webhooks
+                                        user = await self.find('u', message.author.id)
+                                        async with aiohttp.ClientSession() as webhook_session:
+                                            webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(webhook_session))
+                                            if len(message.attachments) == 0:
+                                                await webhook.send(message.content, username=message.author.display_name, avatar_url=str(user.avatar_url))
+                                            else:
+                                                for attachment in message.attachments:
+                                                    await webhook.send(content=None, username=message.author.display_name, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
                                                 
    
     @commands.command()

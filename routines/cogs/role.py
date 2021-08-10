@@ -261,6 +261,7 @@ class RSRole(commands.Cog, name='Role'):
             await ctx.message.delete()
             await msg.delete()
 
+    
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):

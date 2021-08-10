@@ -160,7 +160,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 11 : 798387540910276628,
             }
 
-    # TODO: slash command testing
+    # slash command testing
     @cog_ext.cog_slash(
         name="display_queue",
         description="Displays the queue of a specific rs level",
@@ -183,7 +183,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 await ctx.send(embed=embed, hidden=True)
         else:
             await ctx.send(f"RS{level} not found. specify a level between 5 and 11", hidden=True)
-
 
     async def generate_run_id(self, event=False):
         async with sessionmaker.begin() as session:
@@ -559,7 +558,7 @@ class RSQueue(commands.Cog, name='Queue'):
         if level is None:
             await ctx.send("Please specify an rs level")
         else:
-            count = await self.count(int(level))
+            count = await self.amount(int(level))
             if count > 3:
                 async with sessionmaker() as session:
                     users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
@@ -648,15 +647,16 @@ class RSQueue(commands.Cog, name='Queue'):
     async def _three(self, ctx, length=60):
         await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], length, ctx.channel.id)
 
-    async def everything(self, ctx, prefix, count, length, channel_id):
+    async def everything(self, ctx, prefix, count, length, channel_id, single_check=False):
         LOGGER.debug(f"Running the everything command")
         LOGGER.debug(f"Values: Prefix: {prefix}, Count: {count}, length: {length}, channel_id: {channel_id}")
         count = int(count)
         if prefix == "+":
-            channel_info = await self.right_channel(ctx)
-            channel = channel_info[1]
-            if channel_info[0]: 
-                if await self.right_role(ctx, channel):
+            if not single_check:
+                channel_info = await self.right_channel(ctx)
+                channel = channel_info[1]
+            if single_check or channel_info[0]: 
+                if single_check or await self.right_role(ctx, channel):
                     if length >= 5 and length <= 11:
                         length = 60
                     # check if adding amount would overfill the queue
@@ -860,6 +860,7 @@ class RSQueue(commands.Cog, name='Queue'):
         if external or channel_info[0]: 
             if external or await self.right_role(ctx, channel):
                 # This is where the fun begins
+                # TODO: call the everything method here
                 if length >= 5 and length <= 11:
                         length = 60
                 async with sessionmaker() as session:
