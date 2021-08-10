@@ -429,13 +429,14 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 club_server_info = ()
                 async with sessionmaker() as session:
                     message_run_id = (await session.get(Talking, message.author.id)).run_id
-                    current_talking = (await session.execute(select(Talking).where(Talking.run_id == message_run_id))).scalars()
-                    for user in current_talking:
-                        total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
-                        total_servers.append(user.server_id)
-                        if user.server_id == clubs_server_id:
-                            club_server_info = (user.server_id, user.user_id, user.channel_id, user.timestamp)
-                total_servers = list(set(total_servers))
+                    if message_run_id is not None:
+                        current_talking = (await session.execute(select(Talking).where(Talking.run_id == message_run_id))).scalars()
+                        for user in current_talking:
+                            total_info.append((user.server_id, user.user_id, user.channel_id, user.timestamp))
+                            total_servers.append(user.server_id)
+                            if user.server_id == clubs_server_id:
+                                club_server_info = (user.server_id, user.user_id, user.channel_id, user.timestamp)
+                        total_servers = list(set(total_servers))
                 # TOTAL INFO -> RUN_ID, SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
                 # Check if the message was sent from the select people and in the right channel
                 if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:

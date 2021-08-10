@@ -318,6 +318,7 @@ class RSQueue(commands.Cog, name='Queue'):
             server_user_ids = []
             LOGGER.debug(people)
             club = 0
+
             for person in people:
                 if person.server_id != clubs_server_id:
                     external_server_ids.append(person.server_id)
@@ -405,9 +406,10 @@ class RSQueue(commands.Cog, name='Queue'):
                 if person.amount < 4:
                     user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
                     session.add(user_enter)
-
-                    user_talking_enter = Talking(run_id=rs_run_id, server_id=person.server_id, user_id=person.user_id, timestamp=timestamp, channel_id=person.channel_id)
-                    session.add(user_talking_enter)
+                    await channel.send(len(connecting_servers) + club)
+                    if len(connecting_servers) > 1: # Only add them to the talking database if there's more than one total server
+                        user_talking_enter = Talking(run_id=rs_run_id, server_id=person.server_id, user_id=person.user_id, timestamp=timestamp, channel_id=person.channel_id)
+                        session.add(user_talking_enter)
                     await session.commit()
                 pass
             await session.commit()
