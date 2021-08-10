@@ -337,13 +337,15 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         await ctx.send("You have no roles matching any known rs levels on this server.")
                     else:
                         level = confirmed_roles[0]
-                        print("ADDING THEM TO THE QUEUE")
                         await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length, external=True)
             else:
                 async with sessionmaker() as session:
                     server = await session.get(ExternalServer, ctx.guild.id)
+                    # check main, 3/4, and silent roles
                     level_role = getattr(server, "rs" + str(level))
-                    if level_role is not None:
+                    level_34_role = getattr(server, "rs" + str(level) + "_34")
+                    level_silent_role = getattr(server, "rs" + str(level) + "_silent")
+                    if level_role is not None or level_34_role is not None or level_silent_role is not None:
                         role_ids = []
                         role_types = ["rs", "rs_34", "rs_silent"]
                         for role in role_types:
