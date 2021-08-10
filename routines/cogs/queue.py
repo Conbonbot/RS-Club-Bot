@@ -856,18 +856,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             break
                                     LOGGER.debug("updated the queue they were in")
                     # Print queue in clubs server
-                    clubs_guild = await self.find('g', clubs_server_id)
-                    clubs_channel_str = "RS" + str(level) + "_CHANNEL"
-                    clubs_channel = await self.find('c', os.getenv(clubs_channel_str))
-                    await self.print_queue(clubs_guild, clubs_channel, level, False)
-                    await clubs_channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
-                    servers = (await session.execute(select(ExternalServer))).scalars()
-                    for server in servers:
-                        if level <= server.max_rs:
-                            guild = await self.find('g', server.server_id)
-                            channel = await self.find('c', server.channel_id)
-                            await self.print_queue(guild, channel, level, False)
-                            await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
+                    await self.leaving_queue(ctx, level)
                 else:
                     # Ping them and ask which queue to leave
                     async with sessionmaker.begin() as session:
