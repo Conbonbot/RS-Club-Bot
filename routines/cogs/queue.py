@@ -900,14 +900,6 @@ class RSQueue(commands.Cog, name='Queue'):
         else:
             await ctx.send("You are currently banned from using the bot.")
 
-
-    @commands.command(help="type !o or !out, which leaves your current RS Queue")
-    async def _out(self, ctx, level=None, external=False):
-        if level is None and not external:
-            level = self.rs_channel[str(ctx.message.channel)]
-        else:
-            level = int(level)
-        await self.everything(ctx, "-", 1, level, 60, ctx.channel.id)
         
 
     @commands.command(help="Use this command (!i or !in) to join a RS Queue")

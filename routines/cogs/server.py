@@ -395,11 +395,9 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                             print("Removing level", levels[0])
                             rsqueue = self.bot.get_cog('Queue')
                             await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True)
-                            #await ctx.invoke(self.bot.get_command('_out'), level=int(levels[0]), external=True)
             else:
                 rsqueue = self.bot.get_cog('Queue')
-                await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True)
-                #await ctx.invoke(self.bot.get_command('_out'), level=level, external=True)
+                await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True)
 
 
 
