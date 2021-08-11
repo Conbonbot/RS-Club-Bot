@@ -362,26 +362,28 @@ class RSQueue(commands.Cog, name='Queue'):
                 if server.server_id not in connecting_servers:
                     if server.min_rs <= level <= server.max_rs:
                         channel = await self.find('c', server.channel_id)
-                        await channel.send(f"```The RS{level} queue has been filled.```")
+                        if channel != -1:
+                            await channel.send(f"```The RS{level} queue has been filled.```")
                 # Print queue to servers who had players in that queue
                 else:
-                    channel = await self.find('c', server.channel_id)
                     guild = await self.find('g', server.server_id)
-                    try:
-                        server_ids = [tup[0] for tup in total_str_people]
-                        index = server_ids.index(server.server_id)
-                        printing = total_str_people[index][1]
-                    except:
-                        printing = " "
-                    await self.print_queue(guild, channel, level)
-                    await channel.send(f"RS{level} Ready! {printing}")
-                    if len(connecting_servers) > 1:
-                        sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
-                        sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
-                        sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes.```"
-                        await channel.send(sending)
-                    else:
-                        await channel.send("Meet where?")
+                    channel = await self.find('c', server.channel_id)
+                    if guild != -1 and channel != -1:
+                        try:
+                            server_ids = [tup[0] for tup in total_str_people]
+                            index = server_ids.index(server.server_id)
+                            printing = total_str_people[index][1]
+                        except:
+                            printing = " "
+                        await self.print_queue(guild, channel, level)
+                        await channel.send(f"RS{level} Ready! {printing}")
+                        if len(connecting_servers) > 1:
+                            sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
+                            sending += "Note that messages will only be sent from players that were in this queue and messages from other players will be ignored as well as bot commands and bots themselves.\n"
+                            sending += "Once all players have decided on where to run this Red Star, have someone run !close to close the connection between the servers. If the command is not run, the connection will automatically close after 5 minutes.```"
+                            await channel.send(sending)
+                        else:
+                            await channel.send("Meet where?")
         # Get RS Event data stuff
         if self.event:
             rs_run_id = await self.generate_run_id(True)
@@ -439,30 +441,31 @@ class RSQueue(commands.Cog, name='Queue'):
                 if level <= server.max_rs:
                     guild = await self.find('g', server.server_id)
                     channel = await self.find('c', server.channel_id)
-                    await self.print_queue(guild, channel, level)
-                    rs_level = "rs" + str(level)
-                    rs_level_34 = "rs" + str(level) + "_34"
-                    role_id = getattr(server, rs_level)
-                    role_id_34 = getattr(server, rs_level_34)
-                    role = discord.utils.get(guild.roles, id=role_id)
-                    role_34 = discord.utils.get(guild.roles, id=role_id_34)
-                    if count == 3:
-                        if role_34 is None:
-                            print_str = f"{name} joined rs{level} ({count}/4)"
-                            print_str += f"\nNo roles were found for rs{level} 3/4, specify them with the `!level` command."
-                            await channel.send(print_str)
+                    if guild != -1 and channel != -1:
+                        await self.print_queue(guild, channel, level)
+                        rs_level = "rs" + str(level)
+                        rs_level_34 = "rs" + str(level) + "_34"
+                        role_id = getattr(server, rs_level)
+                        role_id_34 = getattr(server, rs_level_34)
+                        role = discord.utils.get(guild.roles, id=role_id)
+                        role_34 = discord.utils.get(guild.roles, id=role_id_34)
+                        if count == 3:
+                            if role_34 is None:
+                                print_str = f"{name} joined rs{level} ({count}/4)"
+                                print_str += f"\nNo roles were found for rs{level} 3/4, specify them with the `!level` command."
+                                await channel.send(print_str)
+                            else:
+                                if role is None:
+                                    await channel.send(f"{name} joined {role_34.mention} ({count}/4)")
+                                else:
+                                    await channel.send(f"{name} joined {role_34.mention} {role.mention} ({count}/4)")
                         else:
                             if role is None:
-                                await channel.send(f"{name} joined {role_34.mention} ({count}/4)")
+                                print_str = f"{name} joined rs{level} ({count}/4)"
+                                print_str += f"\nNo roles were found for rs{level}, specify them with the `!level` command."
+                                await channel.send(print_str)
                             else:
-                                await channel.send(f"{name} joined {role_34.mention} {role.mention} ({count}/4)")
-                    else:
-                        if role is None:
-                            print_str = f"{name} joined rs{level} ({count}/4)"
-                            print_str += f"\nNo roles were found for rs{level}, specify them with the `!level` command."
-                            await channel.send(print_str)
-                        else:
-                            await channel.send(f"{name} joined {role.mention} ({count}/4)")
+                                await channel.send(f"{name} joined {role.mention} ({count}/4)")
 
     async def leaving_queue(self, ctx, level):
         # Print info in clubs server
@@ -477,8 +480,9 @@ class RSQueue(commands.Cog, name='Queue'):
                 if server.min_rs <= level <= server.max_rs:
                     guild = await self.find('g', server.server_id)
                     channel = await self.find('c', server.channel_id)
-                    await self.print_queue(guild, channel, level, False)
-                    await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
+                    if guild != -1 and channel != -1:
+                        await self.print_queue(guild, channel, level, False)
+                        await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
 
     @tasks.loop(minutes=1.0)
     async def check_people(self):
