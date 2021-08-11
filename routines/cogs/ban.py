@@ -41,8 +41,9 @@ class RSBan(commands.Cog, name='Ban'):
             banned_users = (await session.execute(select(Banned))).scalars()
             current_time = int(time.time())
             for user in banned_users:
-                if user.unban_timestamp < current_time:
-                    await session.delete(user)
+                if user.unban_timestamp != -1:
+                    if user.unban_timestamp < current_time:
+                        await session.delete(user)
             await session.commit()
 
 
@@ -68,7 +69,10 @@ class RSBan(commands.Cog, name='Ban'):
                 ban_enter = Banned(user_id=user_id, nickname=user.display_name, unban_timestamp=unban_time, reason=str_reason)
                 session.add(ban_enter)
                 await session.commit()
-                await ctx.send(f"User has been banned for {days} days")
+                if days != -1:
+                    await ctx.send(f"User has been banned for {days} days")
+                else:
+                    await ctx.send(f"User has been banned Indefinitely")
             else:
                 await ctx.send("That user is already banned")
 
@@ -90,9 +94,20 @@ class RSBan(commands.Cog, name='Ban'):
         current_time = int(time.time())
         async with sessionmaker() as session:
             banned_users = (await session.execute(select(Banned))).scalars()
-            ban_list = [(user.user_id, user.nickname, (user.unban_timestamp-current_time)/86400, user.reason) for user in banned_users]
-            for (id, name, days, reason) in ban_list:
-                await ctx.send(f"User ID: {id} | Name: {name} | Days until unban: {format(days,'.2f')} | Reason for ban: {reason}")
+            ban_list = []
+            if len(banned_users.all()) != 0:
+                for user in banned_users:
+                    if user.unban_timestamp != -1:
+                        ban_list.append(user.user_id, user.nickname, (user.unban_timestamp-current_time)/86400, user.reason) 
+                    else:
+                        ban_list.append(user.user_id, user.nickname, -1, user.reason) 
+                for (id, name, days, reason) in ban_list:
+                    if days != -1:
+                        await ctx.send(f"User ID: {id} | Name: {name} | Days until unban: {format(days,'.2f')} | Reason for ban: {reason}")
+                    else:
+                        await ctx.send(f"User ID: {id} | Name: {name} | Days until unban: Indefinite | Reason for ban: {reason}")
+            else:
+                await ctx.send("There are currently no banned users.")
 
 
 

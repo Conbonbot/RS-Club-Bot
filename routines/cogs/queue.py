@@ -732,7 +732,6 @@ class RSQueue(commands.Cog, name='Queue'):
         LOGGER.debug(f"Values: Prefix: {prefix}, Count: {count}, length: {length}, channel_id: {channel_id}")
         count = int(count)
         level = int(level)
-        channel = await self.bot.fetch_channel(819284320295321642)
         async with sessionmaker() as session:
             person = await session.get(Banned, ctx.author.id)
         if person is None:
