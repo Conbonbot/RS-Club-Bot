@@ -551,7 +551,7 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command(aliases=["r", "^", "staying"])
     async def refresh(self, ctx):
         async with sessionmaker() as session:
-            # TODO: fix this (self.rs_channel[str(ctx.message.channel)])
+            # TODO: fix this (self.rs_channel[str(ctx.message.channel)]) please
             conditions  = and_(Queue.user_id == ctx.author.id, Queue.level == self.rs_channel[str(ctx.message.channel)])
             times = (await session.execute(select(Queue).where(conditions))).scalars()
             times.first().time = int(time.time())
