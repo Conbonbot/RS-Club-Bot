@@ -721,8 +721,14 @@ class RSQueue(commands.Cog, name='Queue'):
             if not single_check:
                 channel_info = await self.right_channel(ctx)
                 channel = channel_info[1]
-            if single_check or external or channel_info[0]: 
-                if single_check or external or await self.right_role(ctx, channel):
+            correct = False
+            if external: # Get right channel
+                async with sessionmaker() as session:
+                    channel_id = (await session.get(ExternalServer, ctx.guild.id)).channel_id
+                    if ctx.channel.id == channel_id:
+                        correct = True
+            if single_check or correct or channel_info[0]: 
+                if single_check or correct or await self.right_role(ctx, channel):
                     if length >= 5 and length <= 11:
                         length = 60
                     # check if adding amount would overfill the queue
@@ -773,7 +779,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                 for queue in final_queues:
                                     if queue[0] == level:
                                         # Check if adding amount to the queue would make it 4/4
-                                        if await self.amount(level) + count < 4:
+                                        if await self.amount(level) + count <= 4:
                                             # check to see if we need to update their position or add another position
                                             async with sessionmaker() as session:
                                                 conditions = and_(Queue.user_id == ctx.author.id, Queue.level == level)
@@ -799,6 +805,8 @@ class RSQueue(commands.Cog, name='Queue'):
                                                 await self.remove_players(ctx, level)
                                             else:
                                                 await self.joining_queue(ctx, level)
+                                        else:
+                                            await ctx.send(f"{ctx.author.mention}, adding {count} people to the queue would overfill the queue")
                             else:
                                 await ctx.send(f"{ctx.author.mention}, you are already queued for a RS{level}, if you want to add another player to the queue, type +1")
                 else:
@@ -871,6 +879,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     for level in levels:
                         level_print += f"`-{count} {level}` "
                     await ctx.send(f"You were found in multiple queues (`{', '.join(levels)}`). Specify which queue you'd like to be removed from using one of following commands: {level_print}")
+
 
     @commands.command(help="type !o or !out, which leaves your current RS Queue")
     async def _out(self, ctx, level=None, external=False):

@@ -30,7 +30,7 @@ from bot import TESTING
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import ExternalServer, Queue, Talking, Stats
+from routines.tables import ExternalServer, Queue, Talking, Stats, Event, Data
 from routines import sessionmaker
 from routines import engine
 
@@ -38,6 +38,8 @@ import requests
 
 from discord import Webhook, AsyncWebhookAdapter
 import aiohttp
+
+
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -98,6 +100,18 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 10 : 773594029371424779,
                 11 : 798387540910276628,
             }
+
+
+    @commands.command()
+    async def test(self, ctx):
+        rsqueue = self.bot.get_cog('Queue')
+        cogs = self.bot.cogs
+        await ctx.send(cogs)
+        if rsqueue is not None:
+            await rsqueue.hi(ctx)
+        else:
+            await ctx.send("cog not found")
+
 
     async def find(self, selection, id):
         # gets user, channel, guild
@@ -310,7 +324,8 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     async def _in(self, ctx, level=None, length=60):
         if ctx.guild.id == clubs_server_id: # Run the command as usual
             level = self.rs_channel[str(ctx.message.channel)]
-            await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length)
+            rsqueue = self.bot.get_cog('Queue')
+            await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
         else:
             # Check if they have the right role with Externalserver (or if it is above it)
             if level is None:
@@ -335,7 +350,8 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         await ctx.send("You have no roles matching any known rs levels on this server.")
                     else:
                         level = confirmed_roles[0]
-                        await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length, external=True)
+                        rsqueue = self.bot.get_cog('Queue')
+                        await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
             else:
                 async with sessionmaker() as session:
                     server = await session.get(ExternalServer, ctx.guild.id)
@@ -361,7 +377,8 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                                         has_role = True
                                         break
                         if has_role:
-                            await ctx.invoke(self.bot.get_command('rs'), level=int(level), length=length, external=True)
+                            rsqueue = self.bot.get_cog('Queue')
+                            await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
                     else:
                         await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
 
@@ -369,7 +386,9 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     async def out(self, ctx, level=None):
         if ctx.guild.id == clubs_server_id: # Run the command as usual
             level = self.rs_channel[str(ctx.message.channel)]
-            await ctx.invoke(self.bot.get_command('_out'), level=level)
+            rsqueue = self.bot.get_cog('Queue')
+            await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id)
+            #await ctx.invoke(self.bot.get_command('_out'), level=level)
         else:
             if level is None:
                 async with sessionmaker() as session:
@@ -385,9 +404,16 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                             await ctx.send(sending)
                         elif len(levels) == 1:
                             print("Removing level", levels[0])
-                            await ctx.invoke(self.bot.get_command('_out'), level=int(levels[0]), external=True)
-            else:   
-                await ctx.invoke(self.bot.get_command('_out'), level=level, external=True)
+                            rsqueue = self.bot.get_cog('Queue')
+                            await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True)
+                            #await ctx.invoke(self.bot.get_command('_out'), level=int(levels[0]), external=True)
+            else:
+                rsqueue = self.bot.get_cog('Queue')
+                await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True)
+                #await ctx.invoke(self.bot.get_command('_out'), level=level, external=True)
+
+
+
 
     @commands.command()
     async def close(self, ctx):
@@ -407,6 +433,9 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 for server in servers:
                     await session.delete(server)
             await session.commit()
+
+
+    
 
 
 
