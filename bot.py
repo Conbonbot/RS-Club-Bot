@@ -51,7 +51,8 @@ DB_TABLES = [
     'stats(user_id BIGINT, timestamp BIGINT, rs_level SMALLINT, run_id INT);',
     'event(run_id INT, score SMALLINT, timestamp BIGINT);',
     'talking(run_id INT, server_id BIGINT, user_id BIGINT, timestamp BIGINT, channel_id BIGINT);',
-    'reactions(server_id BIGINT, rs_message_id BIGINT, rs_34_message_id BIGINT, rs_silent_message_id BIGINT);'
+    'reactions(server_id BIGINT, rs_message_id BIGINT, rs_34_message_id BIGINT, rs_silent_message_id BIGINT);',
+    'banned(user_id BIGINT, nickname TEXT, unban_timestamp BIGINT, reason TEXT);'
 ]
 
 

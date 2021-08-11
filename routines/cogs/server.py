@@ -102,17 +102,6 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             }
 
 
-    @commands.command()
-    async def test(self, ctx):
-        rsqueue = self.bot.get_cog('Queue')
-        cogs = self.bot.cogs
-        await ctx.send(cogs)
-        if rsqueue is not None:
-            await rsqueue.hi(ctx)
-        else:
-            await ctx.send("cog not found")
-
-
     async def find(self, selection, id):
         # gets user, channel, guild
         await self.bot.wait_until_ready()

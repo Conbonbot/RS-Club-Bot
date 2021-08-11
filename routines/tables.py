@@ -107,6 +107,14 @@ class Reactions(Base):
     rs_34_message_id = Column(BigInteger)
     rs_silent_message_id = Column(BigInteger)
 
+class Banned(Base):
+    __tablename__ = 'banned'
+    user_id = Column(BigInteger, primary_key=True)
+    nickname = Column(Text)
+    unban_timestamp = Column(BigInteger)
+    reason = Column(Text)
+    
+
     
 
     
