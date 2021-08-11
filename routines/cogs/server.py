@@ -230,9 +230,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                     external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
                     external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # type @<>` command.")
                     external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
-                    external_embed.add_field(name="Joining Queues", value=f"Use the `!in #`/`!i #` command to join a queue, where `#` is the rs level you want to join. If `#` is not specified, it will default to your current rs level.")
-                    external_embed.add_field(name="Leaving Queues", value=f"Use the `!out`/`!o` command to leave a queue.")
-                    external_embed.add_field(name="Showing Queues", value=f"Use the `!q #` (where `#` is a rs level) command to show you the queue for rs#")
+                    external_embed.add_field(name="Joining/Leaving/Showing Queues", value=f"Go to the queue section of the `!help` command to get information on the queueing system (`!help q`).")
                     await ctx.send(embed=external_embed)
             else: # They were found in the database, update their max rs level
                 async with sessionmaker() as session:

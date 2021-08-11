@@ -1,4 +1,5 @@
 """Setup help command."""
+from routines.cogs import queue
 import discord
 from routines.commands import CommandRoutine
 
@@ -46,7 +47,7 @@ class Help(CommandRoutine):
                 queue_embed.add_field(name=f"!in/i and !out/o", value=f"The command !in or !i run in one of the rs channels will add 1 player (you) to the current rs queue, and !out or !o will remove 1 player (you) from the current queue")
                 queue_embed.add_field(name=f"!rs", value=f"The !rs command run in one of the rs channels will add 1 player (you) to the current queue.", inline=False)
                 queue_embed.add_field(name=f"!queue/q", value=f"This command (!queue or !q) will display the current queue of whatever rs channel you're in.", inline=False)
-                queue_embed.add_field(name=f"Additional Parameters", value=f"adding a number to any of the commands that adds players to a queue will specifiy how long you'll remain in a queue before you get timed out (If you don't specifiy a number, it will be 60 minutes). An example is +2 45, which adds 2 players to the queue, and after 45 minutes they will be timed out and removed from the queue.")
+                queue_embed.add_field(name=f"External Servers", value=f"These commands shown above will also work in servers outside of The Clubs, and function very much the same. If you want to join a queue of a **lower** rs level than what your current role is (i.e. An rs9 player joining an rs7 queue), append the rs level at the end of the command (`+1 7` for example). The same applies for the `!queue` command, only it shows the rs level of the queue you specify.")
                 await ctx.send(embed=queue_embed)
             elif option == "rsmod" or option == "rs" or option == "rsmods":
                 rsmod_embed = discord.Embed(
@@ -87,9 +88,7 @@ class Help(CommandRoutine):
                 external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
                 external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # type @<>` command.")
                 external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
-                external_embed.add_field(name="Joining Queues", value=f"Use the `!in #`/`!i #` command to join a queue, where `#` is the rs level you want to join. If `#` is not specified, it will default to your current rs level.")
-                external_embed.add_field(name="Leaving Queues", value=f"Use the `!out`/`!o` command to leave a queue.")
-                external_embed.add_field(name="Showing Queues", value=f"Use the `!q #` (where `#` is a rs level) command to show you the queue for rs#")
+                external_embed.add_field(name="Joining/Leaving/Showing Queues", value=f"Go to the queue section of the `!help` command to get information on the queueing system (`!help q`).")
                 await ctx.send(embed=external_embed)
             else:
                 await ctx.send(f"{option} is not a valid option to the `!help` command, the current options are `role`, `queue`, `rsmod`, `external`, and `other`")

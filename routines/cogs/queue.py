@@ -546,6 +546,7 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command(aliases=["r", "^", "staying"])
     async def refresh(self, ctx):
         async with sessionmaker() as session:
+            # TODO: fix this (self.rs_channel[str(ctx.message.channel)])
             conditions  = and_(Queue.user_id == ctx.author.id, Queue.level == self.rs_channel[str(ctx.message.channel)])
             times = (await session.execute(select(Queue).where(conditions))).scalars()
             times.first().time = int(time.time())
@@ -632,7 +633,6 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.message.delete()
             await message.delete()
 
-    #TODO: make changes for +/- 1/2/3 for external servers
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
     async def _one(self, ctx, level=None, length=60):
