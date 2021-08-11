@@ -525,6 +525,10 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send("Added")
         else:
             await ctx.send("This command can only be used in testing")
+
+    @commands.command()
+    async def github(self, ctx):
+        await ctx.send(f"Here's the github link to the bot (https://github.com/Conbonbot/RS-Club-Bot). If you want to contribute feel free to make a pull request!")
     
     @commands.command()
     @commands.has_role("mod")

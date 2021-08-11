@@ -18,6 +18,7 @@ class Help(CommandRoutine):
                 send += "```Rsmods (showing mods when you enter a queue to alert players what mods are on your ships/whatever else you want them to know): type `!help rsmod` (or rs/rsmods)```"
                 send += "```External Servers and The Clubs: type `!help external` (or e)```"
                 send += "```Other useful commands: type `!help other` (or o)```"
+                send += "Also there's `!github` if you want to see my horrible open source code!"
                 await ctx.send(send)
             elif option == "roles" or option == "role" or option == "r":
                 role_embed = discord.Embed(
@@ -76,13 +77,13 @@ class Help(CommandRoutine):
                 await ctx.send(embed=other_embed)
             elif option == "external" or option == "e":
                 external_embed = discord.Embed(
-                    title='External (Currently in Development)',
+                    title='External',
                     color=discord.Color.green()
                 )
                 if TESTING:
                     external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=809871917946634261&permissions=8&scope=bot) and follow the steps")
                 else:
-                    external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=120796228672&scope=bot) and follow the steps")
+                    external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=54224276544&scope=bot%20applications.commands) and follow the steps")
                 external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
                 external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
                 external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
