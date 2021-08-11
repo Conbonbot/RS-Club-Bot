@@ -56,10 +56,8 @@ import random
 
 if TESTING:
     clubs_server_id = 805959424081920022
-    guild_ids = [805959424081920022]
 else:
     clubs_server_id = 682479756104564775
-    guild_ids = [682479756104564775, 392546441853403136]
 
 # TODO: Use an actual settings file for these and channel/message ids.
 RS_GROUPS = {
@@ -171,8 +169,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 option_type=4,
                 required=True
             )
-        ],
-        guild_ids=guild_ids
+        ]
     )
     async def display_queue(self, ctx: SlashContext, level: int):
         if 5 <= level <= 11:
