@@ -248,7 +248,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                     session.add(add_temp)
                     await session.commit()
-                elif minutes >= queue.length + 1:
+                elif minutes >= queue.length + 5:
                     # Get user and delete them from the queue database
                     User_leave = (await session.get(Queue, (queue.user_id, queue.level)))
                     await session.delete(User_leave)
@@ -273,30 +273,6 @@ class RSQueue(commands.Cog, name='Queue'):
                         await session.delete(temp)
                         await session.commit()
             await session.commit()
-
-    @commands.command()
-    async def test_temp(self, ctx):
-        level = 5
-        user_id = ctx.author.id
-        async with sessionmaker() as session:
-            conditions  = and_(Temp.user_id == user_id, Temp.level == level)
-            temps = (await session.execute(select(Temp).where(conditions))).scalars()
-            for temp in temps:
-                ctx.send(temp)
-                channel = await self.find('c', temp.channel_id)
-                message = await channel.fetch_message(temp.message_id)
-                await message.delete()
-                await session.delete(temp)
-                await session.commit()
-
-    @commands.command()
-    async def test_del(self, ctx, id: int):
-        channel = await self.bot.fetch_channel(858484643632381955)
-        try:
-            message = await channel.fetch_message(id)
-            await message.delete()
-        except Exception as e:
-            await ctx.send(e)
 
     async def right_channel(self, ctx):
         right = False
