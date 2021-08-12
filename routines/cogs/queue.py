@@ -184,7 +184,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 server = await session.get(ExternalServer, server_id)
                 async with aiohttp.ClientSession() as webhook_session:
                     webhook = Webhook.from_url(server.webhook, adapter=AsyncWebhookAdapter(webhook_session))
-                    await webhook.send(message_str, username=ctx.author.display_name, avatar_url=str(ctx.author.avatar_url))
+                    await webhook.send(message_str, username="Conbon", avatar_url=str(ctx.author.avatar_url))
         else:
             await ctx.send("This command can only be used by Conbonbot")
 
