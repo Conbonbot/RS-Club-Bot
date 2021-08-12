@@ -31,6 +31,9 @@ from discord_slash.utils.manage_commands import create_option, create_choice
 
 import numpy as np
 
+from discord import Webhook, AsyncWebhookAdapter
+import aiohttp
+
 from bot import LOGGER, RSClubBot
 from bot import TESTING
 
@@ -172,6 +175,18 @@ class RSQueue(commands.Cog, name='Queue'):
         else:
             await ctx.send(f"RS{level} not found. specify a level between 5 and 11", hidden=True)
 
+
+    @commands.command()
+    async def send(self, ctx, server_id: int, *message):
+        if ctx.author.id == 384481151475122179:
+            message_str = ' '.join(message)
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, server_id)
+                async with aiohttp.ClientSession() as webhook_session:
+                    webhook = Webhook.from_url(server.webhook, adapter=AsyncWebhookAdapter(webhook_session))
+                    await webhook.send(message_str, username=ctx.author.display_name, avatar_url=str(ctx.author.avatar_url))
+        else:
+            await ctx.send("This command can only be used by Conbonbot")
 
 
     async def generate_run_id(self, event=False):
