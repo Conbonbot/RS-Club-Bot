@@ -13,7 +13,7 @@ class Queue(Base):
     __tablename__ = 'queue'
     server_id = Column(BigInteger)
     user_id = Column(BigInteger, primary_key=True)
-    amount = Column(SmallInteger, primary_key=True)
+    amount = Column(SmallInteger)
     level = Column(SmallInteger, primary_key=True)
     time = Column(BigInteger)
     length = Column(Integer)
@@ -41,10 +41,10 @@ class Data(Base):
 
 class Temp(Base):
     __tablename__ = 'temp'
-    server_id = Column(BigInteger, primary_key=True)
-    channel_id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, primary_key=True)
-    message_id = Column(BigInteger)
+    server_id = Column(BigInteger)
+    channel_id = Column(BigInteger)
+    user_id = Column(BigInteger)
+    message_id = Column(BigInteger, primary_key=True)
     amount = Column(SmallInteger)
     level = Column(SmallInteger)
 

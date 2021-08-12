@@ -24,6 +24,17 @@ sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 from routines.tables import Queue, Data, Temp, ExternalServer, Reactions
 from routines import sessionmaker
 
+
+club_channels = {
+    5 : os.getenv("RS5_CHANNEL"),
+    6 : os.getenv("RS6_CHANNEL"),
+    7 : os.getenv("RS7_CHANNEL"),
+    8 : os.getenv("RS8_CHANNEL"),
+    9 : os.getenv("RS9_CHANNEL"),
+    10 : os.getenv("RS10_CHANNEL"),
+    11 : os.getenv("RS11_CHANNEL")
+}
+
 # TODO: Use an actual settings file.
 ROLE_CHANNEL_ID = 817000327022247936 if TESTING else 801610229040939038
 
@@ -270,9 +281,16 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
+        external_rs_message = 0
+        external_rs_34_message = 0
+        external_rs_silent_message = 0
         async with sessionmaker() as session:
             server = await session.get(Reactions, payload.guild_id)
-        if(payload.message_id == 858406627220258836 or payload.message_id == server.rs_message_id): # Regular roles
+            if server is not None:
+                external_rs_message = server.rs_message_id
+                external_rs_34_message = server.rs_34_message_id
+                external_rs_silent_message = server.rs_silent_message_id
+        if(payload.message_id == 858406627220258836 or payload.message_id == external_rs_message): # Regular roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -313,7 +331,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 858406639621898250 or payload.message_id == server.rs_34_message_id): # 3/4 roles
+        elif(payload.message_id == 858406639621898250 or payload.message_id == external_rs_34_message): # 3/4 roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -355,7 +373,7 @@ class RSRole(commands.Cog, name='Role'):
                     if(welcome_message is not None):
                         await asyncio.sleep(60)
                         await welcome_message.delete()
-        elif(payload.message_id == 858406648041439282 or payload.message_id == server.rs_silent_message_id): # silent roles
+        elif(payload.message_id == 858406648041439282 or payload.message_id == external_rs_silent_message): # silent roles
             reaction = str(payload.emoji)
             try:
                 rs_role = self.emojis[reaction]
@@ -405,11 +423,11 @@ class RSRole(commands.Cog, name='Role'):
                     if str(payload.emoji) == '✅':
                         async with sessionmaker() as session:
                             # Get user and update timestamp
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
+                            user = await session.get(Temp, payload.message_id)
                             user.time = int(time.time())
                             level = user.level
                             amount = user.amount
-                            queue_user = await session.get(Queue, (payload.user_id, amount, level))
+                            queue_user = await session.get(Queue, (payload.user_id, level))
                             queue_user.time = int(time.time())
                             await session.commit()
                             # Send a requeued message
@@ -419,7 +437,7 @@ class RSRole(commands.Cog, name='Role'):
                             await message.delete()
                             await channel.send(f'{payload.member.mention}, you are requed for a RS{level}! ({await self.amount(level)}/4)')
                             # Delete them from the temp database
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
+                            user = await session.get(Temp, payload.message_id)
                             await session.delete(user)
                             await session.commit()
                     elif str(payload.emoji) == '❌':
@@ -431,13 +449,14 @@ class RSRole(commands.Cog, name='Role'):
                             await message.remove_reaction(str(payload.emoji), payload.member)
                             await message.delete()
                             # Get the user from the temp database
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
+                            user = await session.get(Temp, payload.message_id)
                             amount = user.amount
                             level = user.level
                             # Kick the user from the queue 
-                            User_leave = (await session.get(Queue, (payload.user_id, amount, level)))
+                            User_leave = (await session.get(Queue, (payload.user_id, level)))
                             count = (await self.amount(level))-1
-                            await channel.send(f"{User_leave.nickname} has left RS{level} ({count}/4)")
+                            club_channel = await self.find('c', club_channels[level])
+                            await club_channel.send(f"{User_leave.nickname} has left RS{level} ({count}/4)")
                             servers = (await session.execute(select(ExternalServer))).scalars()
                             for server in servers:
                                 if server.min_rs <= User_leave.level <= server.max_rs:
@@ -446,7 +465,6 @@ class RSRole(commands.Cog, name='Role'):
                             await session.delete(User_leave)
                             await session.commit()
                             # Remove them from the temp database
-                            user = await session.get(Temp, (payload.guild_id, payload.channel_id, payload.user_id))
                             await session.delete(user)
                             await session.commit()
                     elif(int(payload.member.id) != self.bot.user.id):

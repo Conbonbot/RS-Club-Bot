@@ -1,5 +1,6 @@
 import asyncio
 from asyncio.locks import Condition
+import re
 import time
 from aiosqlite.core import LOG
 
@@ -16,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy import delete
 from sqlalchemy import and_
-from sqlalchemy.orm import session
+from sqlalchemy.orm import selectinload, session
 from sqlalchemy.sql.expression import insert
 from sqlalchemy.sql.selectable import Select
 from sqlalchemy import inspect
@@ -28,7 +29,7 @@ from discord import Embed
 from discord_slash import cog_ext, SlashContext
 from discord_slash.utils.manage_commands import create_option, create_choice
 
-
+import numpy as np
 
 from bot import LOGGER, RSClubBot
 from bot import TESTING
@@ -46,6 +47,16 @@ rs_club_webhooks = {
     "9" : os.getenv("RS9_WEBHOOK"),
     "10" : os.getenv("RS10_WEBHOOK"),
     "11" : os.getenv("RS11_WEBHOOK")
+}
+
+club_channels = {
+    5 : os.getenv("RS5_CHANNEL"),
+    6 : os.getenv("RS6_CHANNEL"),
+    7 : os.getenv("RS7_CHANNEL"),
+    8 : os.getenv("RS8_CHANNEL"),
+    9 : os.getenv("RS9_CHANNEL"),
+    10 : os.getenv("RS10_CHANNEL"),
+    11 : os.getenv("RS11_CHANNEL")
 }
 
 
@@ -137,26 +148,6 @@ class RSQueue(commands.Cog, name='Queue'):
             "3️⃣": 3,
             "4️⃣": 4
         }
-        if TESTING:
-            self.club_channels = {
-                5 : 805963630004535368,
-                6 : 805963657442885663,
-                7 : 805963675198160906,
-                8 : 805963696077013054,
-                9 : 805963717921079346,
-                10 : 805963741430415372,
-                11 : 806270120791244910
-            }
-        else:
-            self.club_channels = {
-                5 : 682479950774665310,
-                6 : 682480009377611776,
-                7 : 682480069754486826,
-                8 : 682480117464956968,
-                9 : 682480172351750144,
-                10 : 773594029371424779,
-                11 : 798387540910276628,
-            }
 
     # slash command testing
     @cog_ext.cog_slash(
@@ -180,6 +171,8 @@ class RSQueue(commands.Cog, name='Queue'):
                 await ctx.send(embed=embed, hidden=True)
         else:
             await ctx.send(f"RS{level} not found. specify a level between 5 and 11", hidden=True)
+
+
 
     async def generate_run_id(self, event=False):
         async with sessionmaker.begin() as session:
@@ -206,7 +199,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def queue_time(self, user_id, amount, level):
         print("QUEUE_TIME", user_id, amount, level)
         async with sessionmaker() as session:
-            person = (await session.get(Queue, (user_id, amount, level)))
+            person = (await session.get(Queue, (user_id, level)))
             data =  int((time.time() - int(person.time)) / 60)
             return data
 
@@ -239,7 +232,6 @@ class RSQueue(commands.Cog, name='Queue'):
                     guild = -1
             return guild
 
-    # TODO: Find primary keys for temp database
     async def check(self):
         async with sessionmaker() as session:
             results = (await session.execute(select(Queue))).scalars()
@@ -249,34 +241,62 @@ class RSQueue(commands.Cog, name='Queue'):
                     # Ping the user
                     user = await self.find('u', queue.user_id)
                     channel = await self.find('c', queue.channel_id)
-                    message = await channel.send(f"{user.mention}, still in for a RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
+                    message = await channel.send(f"{user.mention}, still in for an RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
                     await message.add_reaction('✅')
                     await message.add_reaction('❌')
                     # Add their user_id and message_id to database
                     add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
                     session.add(add_temp)
                     await session.commit()
-                elif minutes >= queue.length + 5:
+                elif minutes >= queue.length + 1:
                     # Get user and delete them from the queue database
-                    User_leave = (await session.get(Queue, (queue.user_id, queue.amount, queue.level)))
+                    User_leave = (await session.get(Queue, (queue.user_id, queue.level)))
                     await session.delete(User_leave)
                     await session.commit()
-                    # get channel and send leaving message to all servers
-                    channel = await self.find('c', queue.channel_id)
+                    # get club channel and send leaving message to all servers
+                    the_clubs_channel = await self.find('c', club_channels[queue.level])
                     count = await self.amount(queue.level)
-                    await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
+                    await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                     servers = (await session.execute(select(ExternalServer))).scalars()
                     for server in servers:
                         if server.min_rs <= queue.level <= server.max_rs:
                             channel = await self.find('c', server.channel_id)
                             await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                     # Remove 'still in for a...' message (if it works)
-                    temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
-                    channel = await self.find('c', temp_access.channel_id)
-                    message = await channel.fetch_message(temp_access.message_id)
-                    await message.delete()
-                    await session.delete(temp_access)
+                    #temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
+                    conditions  = and_(Temp.user_id == queue.user_id, Temp.level == queue.level)
+                    temps = (await session.execute(select(Temp).where(conditions))).scalars()
+                    for temp in temps:
+                        channel = await self.find('c', temp.channel_id)
+                        message = await channel.fetch_message(temp.message_id)
+                        await message.delete()
+                        await session.delete(temp)
+                        await session.commit()
             await session.commit()
+
+    @commands.command()
+    async def test_temp(self, ctx):
+        level = 5
+        user_id = ctx.author.id
+        async with sessionmaker() as session:
+            conditions  = and_(Temp.user_id == user_id, Temp.level == level)
+            temps = (await session.execute(select(Temp).where(conditions))).scalars()
+            for temp in temps:
+                ctx.send(temp)
+                channel = await self.find('c', temp.channel_id)
+                message = await channel.fetch_message(temp.message_id)
+                await message.delete()
+                await session.delete(temp)
+                await session.commit()
+
+    @commands.command()
+    async def test_del(self, ctx, id: int):
+        channel = await self.bot.fetch_channel(858484643632381955)
+        try:
+            message = await channel.fetch_message(id)
+            await message.delete()
+        except Exception as e:
+            await ctx.send(e)
 
     async def right_channel(self, ctx):
         right = False
@@ -326,7 +346,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 print_people.append(person.nickname)
         print_people = list(set(print_people))
         connecting_servers = set(external_server_ids)
-        club_channel = await self.find('c',self.club_channels[level])
+        club_channel = await self.find('c', club_channels[level])
         club_guild = await self.find('g', clubs_server_id)
         if club == 1:
             # Print queue to clubs server
@@ -428,7 +448,7 @@ class RSQueue(commands.Cog, name='Queue'):
         name = ctx.author.display_name
         count = await self.amount(level)
         guild = await self.find('g', clubs_server_id)
-        channel = await self.find('c', self.club_channels[level])
+        channel = await self.find('c', club_channels[level])
         await self.print_queue(guild, channel, level)
         if count == 3:
             await channel.send(f"{name} joined {self.rs_ping_1more[f'RS{level}']} {self.rs_ping[f'RS{level}']} ({count}/4)")
@@ -470,7 +490,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def leaving_queue(self, ctx, level):
         # Print info in clubs server
         guild = await self.find('g', clubs_server_id)
-        channel = await self.find('c', self.club_channels[level])
+        channel = await self.find('c', club_channels[level])
         await self.print_queue(guild, channel, level, False)
         await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({await self.amount(level)}/4)")
         # Print queues to other servers
@@ -527,6 +547,18 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send("This command can only be used in testing")
 
     @commands.command()
+    async def add_me(self, ctx, level: int, amount: int, length: int):
+        if TESTING:
+            async with sessionmaker() as session:
+                user = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=amount, level=level, time=int(time.time()), length=length, channel_id=ctx.channel.id, nickname=ctx.author.display_name)
+                session.add(user)
+                await session.commit()
+            await ctx.send("Added")
+        else:
+            await ctx.send("This command can only be used in testing")
+            
+
+    @commands.command()
     async def github(self, ctx):
         await ctx.send(f"Here's the github link to the bot (https://github.com/Conbonbot/RS-Club-Bot). If you want to contribute feel free to make a pull request!")
     
@@ -549,7 +581,7 @@ class RSQueue(commands.Cog, name='Queue'):
         await message.delete()
 
     @commands.command(aliases=["r", "^", "staying"])
-    async def refresh(self, ctx):
+    async def refresh(self, ctx, level=None):
         async with sessionmaker() as session:
             # TODO: fix this (self.rs_channel[str(ctx.message.channel)]) please
             conditions  = and_(Queue.user_id == ctx.author.id, Queue.level == self.rs_channel[str(ctx.message.channel)])
@@ -673,7 +705,11 @@ class RSQueue(commands.Cog, name='Queue'):
                             async with sessionmaker() as session:
                                 user_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
                                 levels = [int(queue.level) for queue in user_queues]
-                                await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], levels[0], length, ctx.channel.id, external=True)
+                                if len(levels) > 0:
+                                    levels.sort(reverse=True)
+                                    await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], levels[0], length, ctx.channel.id, external=True)
+                                else:
+                                    await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues at the moment")
                         else:
                             async with sessionmaker() as session:
                                 server = await session.get(ExternalServer, ctx.guild.id)
@@ -813,7 +849,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                                         for data in (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars():
                                                             if(data.level == queue[0]):
                                                                 pre_amount = data.amount
-                                                                user = await session.get(Queue, (ctx.author.id, pre_amount, level))
+                                                                user = await session.get(Queue, (ctx.author.id, level))
                                                                 user.amount = int(queue[1])
                                                                 user.time = int(time.time())
                                                                 user.length = length
@@ -871,7 +907,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                             if(data.level == queue[0]):
                                                 pre_amount = data.amount
                                                 LOGGER.debug(f"pre_amount {pre_amount}")
-                                                user = await session.get(Queue, (ctx.author.id, pre_amount, level))
+                                                user = await session.get(Queue, (ctx.author.id, level))
                                                 LOGGER.debug(f"User: {user}")
                                                 await session.delete(user)
                                                 await session.commit()
@@ -881,7 +917,7 @@ class RSQueue(commands.Cog, name='Queue'):
                                         for data in (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars():
                                             if(data.level == queue[0]):
                                                 pre_amount = data.amount
-                                                user = await session.get(Queue, (ctx.author.id, pre_amount, level))
+                                                user = await session.get(Queue, (ctx.author.id, level))
                                                 user.amount = int(queue[1])
                                                 await session.commit()
                                                 break

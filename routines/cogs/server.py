@@ -133,7 +133,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
 
     async def queue_time(self, user_id, amount, level):
         async with sessionmaker.begin() as session:
-            person = (await session.get(Queue, (user_id, amount, level)))
+            person = (await session.get(Queue, (user_id, level)))
             data =  int((time.time() - int(person.time)) / 60)
             return data
 
@@ -394,7 +394,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                         elif len(levels) == 1:
                             print("Removing level", levels[0])
                             rsqueue = self.bot.get_cog('Queue')
-                            await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True)
+                            await rsqueue.everything(ctx, "-", 1, level[0], 60, ctx.channel.id, external=True)
             else:
                 rsqueue = self.bot.get_cog('Queue')
                 await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True)
