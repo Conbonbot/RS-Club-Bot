@@ -484,6 +484,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             else: # Check global chat/sending
                 async with sessionmaker() as session:
                     # Sending from server to #feedback
+                    webhook_url = None
                     server = (await session.execute(select(Feedback))).scalars().first()
                     if server is not None:
                         check = int(message.channel.id) == int(os.getenv('FEEDBACK_CHANNEL'))
