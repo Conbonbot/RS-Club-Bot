@@ -78,6 +78,7 @@ class ExternalServer(Base):
     rs9_silent = Column(BigInteger)
     rs10_silent = Column(BigInteger)
     rs11_silent = Column(BigInteger)
+    show = Column(Boolean)
 
 class Stats(Base):
     __tablename__= 'stats'

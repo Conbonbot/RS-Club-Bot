@@ -167,11 +167,19 @@ class RSQueue(commands.Cog, name='Queue'):
     )
     async def display_queue(self, ctx: SlashContext, level: int):
         if 5 <= level <= 11:
-            embed = await self.print_queue(ctx.guild, ctx.channel, level, display=False, slash=True)
-            if embed is None:
-                await ctx.send(f"No RS{level} Queues found, you can start one by typing `!in {level}`", hidden=True)
-            else:
-                await ctx.send(embed=embed, hidden=True)
+            async with sessionmaker() as session:
+                force = False
+                if ctx.guild.id == clubs_server_id:
+                    force = True
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if force or server.show:
+                    embed = await self.print_queue(ctx.guild, ctx.channel, level, display=False, slash=True)
+                    if embed is None:
+                        await ctx.send(f"No RS{level} Queues found, you can start one by typing `!in {level}`", hidden=True)
+                    else:
+                        await ctx.send(embed=embed, hidden=True)
+                else:
+                    await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command", hidden=True)
         else:
             await ctx.send(f"RS{level} not found. specify a level between 5 and 11", hidden=True)
 
@@ -285,7 +293,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                     servers = (await session.execute(select(ExternalServer))).scalars()
                     for server in servers:
-                        if server.min_rs <= queue.level <= server.max_rs:
+                        if server.show and server.min_rs <= queue.level <= server.max_rs:
                             channel = await self.find('c', server.channel_id)
                             await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                     # Remove 'still in for a...' message (if it works)
@@ -381,13 +389,13 @@ class RSQueue(commands.Cog, name='Queue'):
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
                 # Tell servers the queue has been filled
-                if server.server_id not in connecting_servers:
+                if server.show and server.server_id not in connecting_servers:
                     if server.min_rs <= level <= server.max_rs:
                         channel = await self.find('c', server.channel_id)
                         if channel != -1:
                             await channel.send(f"```The RS{level} queue has been filled.```")
                 # Print queue to servers who had players in that queue
-                else:
+                elif server.show:
                     guild = await self.find('g', server.server_id)
                     channel = await self.find('c', server.channel_id)
                     if guild != -1 and channel != -1:
@@ -460,7 +468,7 @@ class RSQueue(commands.Cog, name='Queue'):
         async with sessionmaker() as session:
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
-                if level <= server.max_rs:
+                if server.show and server.min_rs <= level <= server.max_rs:
                     guild = await self.find('g', server.server_id)
                     channel = await self.find('c', server.channel_id)
                     if guild != -1 and channel != -1:
@@ -499,7 +507,7 @@ class RSQueue(commands.Cog, name='Queue'):
         async with sessionmaker() as session:
             servers = (await session.execute(select(ExternalServer))).scalars()
             for server in servers:
-                if server.min_rs <= level <= server.max_rs:
+                if server.show and server.min_rs <= level <= server.max_rs:
                     guild = await self.find('g', server.server_id)
                     channel = await self.find('c', server.channel_id)
                     if guild != -1 and channel != -1:
@@ -699,69 +707,75 @@ class RSQueue(commands.Cog, name='Queue'):
             # Check if sent in right channel
             async with sessionmaker() as session:
                 server = await session.get(ExternalServer, ctx.guild.id)
-                if server.channel_id == ctx.channel.id:
-                    if level is None:
-                        # Get their current rs level
-                        if ctx.message.content[0] == "-":
-                            # check to see if they are in any queues
-                            async with sessionmaker() as session:
-                                user_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
-                                levels = [int(queue.level) for queue in user_queues]
-                                if len(levels) > 0:
-                                    levels.sort(reverse=True)
-                                    await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], levels[0], length, ctx.channel.id, external=True)
-                                else:
-                                    await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues at the moment")
+                if server.show:
+                    if server.channel_id == ctx.channel.id:
+                        if level is None:
+                            # Get their current rs level
+                            if ctx.message.content[0] == "-":
+                                # check to see if they are in any queues
+                                async with sessionmaker() as session:
+                                    user_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
+                                    levels = [int(queue.level) for queue in user_queues]
+                                    if len(levels) > 0:
+                                        levels.sort(reverse=True)
+                                        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], levels[0], length, ctx.channel.id, external=True)
+                                    else:
+                                        await ctx.send(f"{ctx.author.mention}, You aren't in an RS Queues at the moment")
+                            else:
+                                async with sessionmaker() as session:
+                                    server = await session.get(ExternalServer, ctx.guild.id)
+                                    role_ids = []
+                                    role_types = ["rs", "rs_34", "rs_silent"]
+                                    for role in role_types:
+                                        for i in range(5,12):
+                                            check_role = role[:2] + str(i) + role[2:]
+                                            if getattr(server, check_role) is not None:
+                                                role_ids.append((i, getattr(server, check_role)))
+                                    role_ids = role_ids[::-1]
+                                    confirmed_roles = []
+                                    for user_roles in ctx.author.roles:
+                                        for (rs_level, id) in role_ids:
+                                            if user_roles.id == id:
+                                                confirmed_roles.append(rs_level)
+                                    confirmed_roles.sort(reverse=True)
+                                    if len(confirmed_roles) == 0:
+                                        await ctx.send("You have no roles matching any known rs levels on this server.")
+                                    else:
+                                        level = confirmed_roles[0]
+                                        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], level, length, ctx.channel.id, external=True)
                         else:
                             async with sessionmaker() as session:
                                 server = await session.get(ExternalServer, ctx.guild.id)
-                                role_ids = []
-                                role_types = ["rs", "rs_34", "rs_silent"]
-                                for role in role_types:
-                                    for i in range(5,12):
-                                        check_role = role[:2] + str(i) + role[2:]
-                                        if getattr(server, check_role) is not None:
-                                            role_ids.append((i, getattr(server, check_role)))
-                                role_ids = role_ids[::-1]
-                                confirmed_roles = []
-                                for user_roles in ctx.author.roles:
-                                    for (rs_level, id) in role_ids:
-                                        if user_roles.id == id:
-                                            confirmed_roles.append(rs_level)
-                                confirmed_roles.sort(reverse=True)
-                                if len(confirmed_roles) == 0:
-                                    await ctx.send("You have no roles matching any known rs levels on this server.")
-                                else:
-                                    level = confirmed_roles[0]
-                                    await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], level, length, ctx.channel.id, external=True)
+                                level_role = getattr(server, "rs" + str(level))
+                                level_34_role = getattr(server, "rs" + str(level) + "_34")
+                                level_silent_role = getattr(server, "rs" + str(level) + "_silent")
+                                if level_role is not None or level_34_role is not None or level_silent_role is not None:
+                                    role_ids = []
+                                    role_types = ["rs", "rs_34", "rs_silent"]
+                                    for role in role_types:
+                                        for i in range(5,12):
+                                            check_role = role[:2] + str(i) + role[2:]
+                                            if getattr(server, check_role) is not None:
+                                                role_ids.append((i, getattr(server, check_role)))
+                                    role_ids = role_ids[::-1]
+                                    confirmed_roles = []
+                                    has_role = False
+                                    for user_roles in ctx.author.roles:
+                                        for (rs_level, id) in role_ids:
+                                            if user_roles.id == id:
+                                                if int(rs_level) >= int(level):
+                                                    has_role = True
+                                                    break
+                                    if has_role:
+                                        await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], level, length, ctx.channel.id, external=True, force=True)
                     else:
-                        async with sessionmaker() as session:
-                            server = await session.get(ExternalServer, ctx.guild.id)
-                            level_role = getattr(server, "rs" + str(level))
-                            level_34_role = getattr(server, "rs" + str(level) + "_34")
-                            level_silent_role = getattr(server, "rs" + str(level) + "_silent")
-                            if level_role is not None or level_34_role is not None or level_silent_role is not None:
-                                role_ids = []
-                                role_types = ["rs", "rs_34", "rs_silent"]
-                                for role in role_types:
-                                    for i in range(5,12):
-                                        check_role = role[:2] + str(i) + role[2:]
-                                        if getattr(server, check_role) is not None:
-                                            role_ids.append((i, getattr(server, check_role)))
-                                role_ids = role_ids[::-1]
-                                confirmed_roles = []
-                                has_role = False
-                                for user_roles in ctx.author.roles:
-                                    for (rs_level, id) in role_ids:
-                                        if user_roles.id == id:
-                                            if int(rs_level) >= int(level):
-                                                has_role = True
-                                                break
-                                if has_role:
-                                    await self.everything(ctx, ctx.message.content[0], ctx.message.content[1], level, length, ctx.channel.id, external=True, force=True)
+                        msg = await ctx.send("Command not run in an RS Channel")
+                        await asyncio.sleep(10)
+                        await ctx.message.delete()
+                        await msg.delete()
                 else:
-                    msg = await ctx.send("Command not run in an RS Channel")
-                    await asyncio.sleep(10)
+                    msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
+                    await asyncio.sleep(45)
                     await ctx.message.delete()
                     await msg.delete()
 
@@ -957,20 +971,29 @@ class RSQueue(commands.Cog, name='Queue'):
         if ctx.guild.id == clubs_server_id:
             level = self.rs_channel[str(ctx.message.channel)]
             await self.print_queue(ctx.guild, ctx.channel, level)
-        elif level == None:
-            await ctx.send("Please specify an RS Queue to show with `!q #` or see all queues with `!q all/a`")
-        elif level == "all" or level == "a":
-            queues = []
-            for i in range(5,12):
-                queues.append(await self.print_queue(ctx.guild, ctx.channel, i, False))
-            printed = False
-            for check in queues:
-                if check:
-                    printed = True
-            if not printed:
-                await ctx.send("No queues were found.")
         else:
-            await self.print_queue(ctx.guild, ctx.channel, int(level))
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if server.show:
+                    if level == None:
+                        await ctx.send("Please specify an RS Queue to show with `!q #` or see all queues with `!q all/a`")
+                    elif level == "all" or level == "a":
+                        queues = []
+                        for i in range(5,12):
+                            queues.append(await self.print_queue(ctx.guild, ctx.channel, i, False))
+                        printed = False
+                        for check in queues:
+                            if check:
+                                printed = True
+                        if not printed:
+                            await ctx.send("No queues were found.")
+                    else:
+                        await self.print_queue(ctx.guild, ctx.channel, int(level))
+                else:
+                    msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
+                    await asyncio.sleep(45)
+                    await ctx.message.delete()
+                    await msg.delete()
 
     async def print_queue(self, guild, channel, level, display=True, slash=False):
         extras = {

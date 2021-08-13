@@ -213,7 +213,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 async with sessionmaker() as session:
                     LOGGER.debug("Adding server to database")
                     webhook = await ctx.channel.create_webhook(name="Global Chat Webhook (The Clubs)")
-                    Server_enter = ExternalServer(server_id=ctx.guild.id, server_name=ctx.guild.name, channel_id=ctx.channel.id, webhook=str(webhook.url), min_rs=int(min_rs), max_rs=int(max_rs), global_chat=False)
+                    Server_enter = ExternalServer(server_id=ctx.guild.id, server_name=ctx.guild.name, channel_id=ctx.channel.id, webhook=str(webhook.url), min_rs=int(min_rs), max_rs=int(max_rs), global_chat=False, show=True)
                     session.add(Server_enter)
                     await session.commit()
                     print_str = "This server has been connected to The Clubs!\n"
@@ -284,7 +284,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 await ctx.send("This server is currently not connected to the clubs")
 
     @commands.command()
-    @has_permissions(manage_roles=True)
+    @commands.has_permissions(manage_roles=True)
     async def level(self, ctx, level, type, role):
         if type == "all" or type == "3/4" or type == "silent":
             async with sessionmaker() as session:
@@ -309,6 +309,36 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
         else:
             await ctx.send("Specify the type of role this is, i.e. `all`, `3/4`, or `silent`")
 
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def show(self, ctx):
+        if ctx.guild.id != clubs_server_id:
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if not server.show:
+                    server.show = True
+                    await session.commit()
+                    await ctx.send("The bot will now display everything related to queues, pinging roles, queueing, etc.")
+                else:
+                    await ctx.send("The bot is already set to display everything. If you want to turn this off, run the `!hide` command.")
+        else:
+            await ctx.send("You can't turn off the queue system on the clubs server 😠")
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def hide(self, ctx):
+        if ctx.guild.id != clubs_server_id:
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if server.show:
+                    server.show = False
+                    await session.commit()
+                    await ctx.send("The bot will no longer display anything related to queues, pinging roles, queuing, etc.")
+                else:
+                    await ctx.send("The bot is already set to not display anything. If you want the bot to display everyihing, run the `!show` command.")
+        else:
+            await ctx.send("You can't turn off the queue system on the clubs server 😠")
+
 
     @commands.command(aliases=["in", "i"])
     async def _in(self, ctx, level=None, length=60):
@@ -317,60 +347,68 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             rsqueue = self.bot.get_cog('Queue')
             await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
         else:
-            # Check if they have the right role with Externalserver (or if it is above it)
-            if level is None:
-                # Get their current rs level and add them to the queue
-                async with sessionmaker() as session:
-                    server = await session.get(ExternalServer, ctx.guild.id)
-                    role_ids = []
-                    role_types = ["rs", "rs_34", "rs_silent"]
-                    for role in role_types:
-                        for i in range(5,12):
-                            check_role = role[:2] + str(i) + role[2:]
-                            if getattr(server, check_role) is not None:
-                                role_ids.append((i, getattr(server, check_role)))
-                    role_ids = role_ids[::-1]
-                    confirmed_roles = []
-                    for user_roles in ctx.author.roles:
-                        for (rs_level, id) in role_ids:
-                            if user_roles.id == id:
-                                confirmed_roles.append(rs_level)
-                    confirmed_roles.sort(reverse=True)
-                    if len(confirmed_roles) == 0:
-                        await ctx.send("You have no roles matching any known rs levels on this server.")
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if server.show:
+                    # Check if they have the right role with Externalserver (or if it is above it)
+                    if level is None:
+                        # Get their current rs level and add them to the queue
+                        async with sessionmaker() as session:
+                            server = await session.get(ExternalServer, ctx.guild.id)
+                            role_ids = []
+                            role_types = ["rs", "rs_34", "rs_silent"]
+                            for role in role_types:
+                                for i in range(5,12):
+                                    check_role = role[:2] + str(i) + role[2:]
+                                    if getattr(server, check_role) is not None:
+                                        role_ids.append((i, getattr(server, check_role)))
+                            role_ids = role_ids[::-1]
+                            confirmed_roles = []
+                            for user_roles in ctx.author.roles:
+                                for (rs_level, id) in role_ids:
+                                    if user_roles.id == id:
+                                        confirmed_roles.append(rs_level)
+                            confirmed_roles.sort(reverse=True)
+                            if len(confirmed_roles) == 0:
+                                await ctx.send("You have no roles matching any known rs levels on this server.")
+                            else:
+                                level = confirmed_roles[0]
+                                rsqueue = self.bot.get_cog('Queue')
+                                await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
                     else:
-                        level = confirmed_roles[0]
-                        rsqueue = self.bot.get_cog('Queue')
-                        await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
-            else:
-                async with sessionmaker() as session:
-                    server = await session.get(ExternalServer, ctx.guild.id)
-                    # check main, 3/4, and silent roles
-                    level_role = getattr(server, "rs" + str(level))
-                    level_34_role = getattr(server, "rs" + str(level) + "_34")
-                    level_silent_role = getattr(server, "rs" + str(level) + "_silent")
-                    if level_role is not None or level_34_role is not None or level_silent_role is not None:
-                        role_ids = []
-                        role_types = ["rs", "rs_34", "rs_silent"]
-                        for role in role_types:
-                            for i in range(5,12):
-                                check_role = role[:2] + str(i) + role[2:]
-                                if getattr(server, check_role) is not None:
-                                    role_ids.append((i, getattr(server, check_role)))
-                        role_ids = role_ids[::-1]
-                        confirmed_roles = []
-                        has_role = False
-                        for user_roles in ctx.author.roles:
-                            for (rs_level, id) in role_ids:
-                                if user_roles.id == id:
-                                    if int(rs_level) >= int(level):
-                                        has_role = True
-                                        break
-                        if has_role:
-                            rsqueue = self.bot.get_cog('Queue')
-                            await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
-                    else:
-                        await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
+                        async with sessionmaker() as session:
+                            server = await session.get(ExternalServer, ctx.guild.id)
+                            # check main, 3/4, and silent roles
+                            level_role = getattr(server, "rs" + str(level))
+                            level_34_role = getattr(server, "rs" + str(level) + "_34")
+                            level_silent_role = getattr(server, "rs" + str(level) + "_silent")
+                            if level_role is not None or level_34_role is not None or level_silent_role is not None:
+                                role_ids = []
+                                role_types = ["rs", "rs_34", "rs_silent"]
+                                for role in role_types:
+                                    for i in range(5,12):
+                                        check_role = role[:2] + str(i) + role[2:]
+                                        if getattr(server, check_role) is not None:
+                                            role_ids.append((i, getattr(server, check_role)))
+                                role_ids = role_ids[::-1]
+                                confirmed_roles = []
+                                has_role = False
+                                for user_roles in ctx.author.roles:
+                                    for (rs_level, id) in role_ids:
+                                        if user_roles.id == id:
+                                            if int(rs_level) >= int(level):
+                                                has_role = True
+                                                break
+                                if has_role:
+                                    rsqueue = self.bot.get_cog('Queue')
+                                    await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True)
+                            else:
+                                await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
+                else:
+                    msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
+                    await asyncio.sleep(45)
+                    await ctx.message.delete()
+                    await msg.delete()
 
     @commands.command(aliases=["o"])
     async def out(self, ctx, level=None):
@@ -380,27 +418,33 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
             await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id)
             #await ctx.invoke(self.bot.get_command('_out'), level=level)
         else:
-            if level is None:
-                async with sessionmaker() as session:
-                    current_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
-                    if current_queues is None:
-                        await ctx.send("You are currently not in any queues")
+            async with sessionmaker() as session:
+                server = await session.get(ExternalServer, ctx.guild.id)
+                if server.show:
+                    if level is None:
+                        async with sessionmaker() as session:
+                            current_queues = (await session.execute(select(Queue).where(Queue.user_id == ctx.author.id))).scalars()
+                            if current_queues is None:
+                                await ctx.send("You are currently not in any queues")
+                            else:
+                                levels = [str(queue.level) for queue in current_queues]
+                                print("LEVELS", levels)
+                                if len(levels) > 1:
+                                    sending = "You were found in these queues, please specify which queue you want to leave: "
+                                    sending += ', '.join(levels)
+                                    await ctx.send(sending)
+                                elif len(levels) == 1:
+                                    print("Removing level", levels[0])
+                                    rsqueue = self.bot.get_cog('Queue')
+                                    await rsqueue.everything(ctx, "-", 1, levels[0], 60, ctx.channel.id, external=True)
                     else:
-                        levels = [str(queue.level) for queue in current_queues]
-                        print("LEVELS", levels)
-                        if len(levels) > 1:
-                            sending = "You were found in these queues, please specify which queue you want to leave: "
-                            sending += ', '.join(levels)
-                            await ctx.send(sending)
-                        elif len(levels) == 1:
-                            print("Removing level", levels[0])
-                            rsqueue = self.bot.get_cog('Queue')
-                            await rsqueue.everything(ctx, "-", 1, levels[0], 60, ctx.channel.id, external=True)
-            else:
-                rsqueue = self.bot.get_cog('Queue')
-                await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True)
-
-
+                        rsqueue = self.bot.get_cog('Queue')
+                        await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True)
+                else:
+                    msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
+                    await asyncio.sleep(45)
+                    await ctx.message.delete()
+                    await msg.delete()
 
 
     @commands.command()
