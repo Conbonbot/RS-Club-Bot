@@ -113,6 +113,11 @@ class Banned(Base):
     nickname = Column(Text)
     unban_timestamp = Column(BigInteger)
     reason = Column(Text)
+
+class Feedback(Base):
+    __tablename__ = 'feedback'
+    server_id = Column(BigInteger, primary_key=True)
+    channel_id = Column(BigInteger)
     
 
     

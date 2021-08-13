@@ -30,7 +30,7 @@ from bot import TESTING
 import sys, os
 sys.path.append(os.path.abspath(os.path.join('..', 'routines')))
 
-from routines.tables import ExternalServer, Queue, Talking, Stats, Event, Data
+from routines.tables import ExternalServer, Feedback, Queue, Talking, Stats, Event, Data
 from routines import sessionmaker
 from routines import engine
 
@@ -255,6 +255,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 await session.delete(server)
                 await session.commit()
                 await ctx.send("The server has been disconnected from The Clubs")
+
     @commands.command()
     async def current(self, ctx):
         async with sessionmaker() as session:
@@ -433,11 +434,11 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
         # author=<Member id=384481151475122179 name='Conbonbot' discriminator='0680' bot=False nick=None guild=<Guild id=858484643632381952 name='Testing Server' shard_id=None chunked=False member_count=2>> flags=<MessageFlags value=0>>
 
         # See if the talking database has anything in it
-        if not message.author.bot:
+        if not message.author.bot and not (message.content.startswith('!') or message.content.startswith('+') or message.content.startswith('-') or message.content.startswith('%')):
             active_global = False
             async with sessionmaker() as session:
-                data_check = (await session.execute(select(Talking))).scalars()
-                if data_check is not None:
+                data_check = (await session.execute(select(Talking))).scalars().all()
+                if len(data_check) != 0:
                     active_global = True
             if active_global:
                 total_info = []
@@ -456,31 +457,53 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                 # TOTAL INFO -> SERVER ID, USER_ID, CHANNEL_ID, TIMESTAMP
                 # Check if the message was sent from the select people and in the right channel
                 if message.guild.id in [info[0] for info in total_info] and message.author.id in [info[1] for info in total_info] and message.channel.id in [info[2] for info in total_info]:
-                        if not (message.content.startswith('!') or message.content.startswith('+') or message.content.startswith('-') or message.content.startswith('%')):
-                            # cut out bot messages and commands
-                            async with sessionmaker() as session:
-                                total_stuff = []
-                                print("Total server data", total_servers)
-                                for data in total_servers:
-                                    if data == clubs_server_id:
-                                        print("CLUBS", clubs_server_id)
-                                        rs_level = (await session.get(Stats, (club_server_info[1], club_server_info[3]))).rs_level
-                                        clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
-                                        total_stuff.append((os.getenv(clubs_webhook_string), data))
-                                    else:
-                                        server = await session.get(ExternalServer, data)
-                                        total_stuff.append((server.webhook, data))
-                                for webhook_url, server_id in total_stuff:
-                                    if server_id != message.guild.id:
-                                        # Send the message with webhooks
-                                        user = await self.find('u', message.author.id)
-                                        async with aiohttp.ClientSession() as webhook_session:
-                                            webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(webhook_session))
-                                            if len(message.attachments) == 0:
-                                                await webhook.send(message.content, username=message.author.display_name, avatar_url=str(user.avatar_url))
-                                            else:
-                                                for attachment in message.attachments:
-                                                    await webhook.send(content=None, username=message.author.display_name, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
+                        # cut out bot messages and commands
+                        async with sessionmaker() as session:
+                            total_stuff = []
+                            print("Total server data", total_servers)
+                            for data in total_servers:
+                                if data == clubs_server_id:
+                                    print("CLUBS", clubs_server_id)
+                                    rs_level = (await session.get(Stats, (club_server_info[1], club_server_info[3]))).rs_level
+                                    clubs_webhook_string = "RS" + str(rs_level) + "_WEBHOOK"
+                                    total_stuff.append((os.getenv(clubs_webhook_string), data))
+                                else:
+                                    server = await session.get(ExternalServer, data)
+                                    total_stuff.append((server.webhook, data))
+                            for webhook_url, server_id in total_stuff:
+                                if server_id != message.guild.id:
+                                    # Send the message with webhooks
+                                    user = await self.find('u', message.author.id)
+                                    async with aiohttp.ClientSession() as webhook_session:
+                                        webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(webhook_session))
+                                        if len(message.attachments) == 0:
+                                            await webhook.send(message.content, username=message.author.display_name, avatar_url=str(user.avatar_url))
+                                        else:
+                                            for attachment in message.attachments:
+                                                await webhook.send(content=None, username=message.author.display_name, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
+            else: # Check global chat/sending
+                async with sessionmaker() as session:
+                    # Sending from server to #feedback
+                    server = (await session.execute(select(Feedback))).scalars().first()
+                    if server is not None:
+                        check = int(message.channel.id) == int(os.getenv('FEEDBACK_CHANNEL'))
+                        if check: # sent in #feedback (send message to feedback server)
+                            user = await self.find('u', 384481151475122179)
+                            username = "Conbon"
+                            ext_server = (await session.execute(select(Feedback))).scalars().first()
+                            webhook_url = (await session.get(ExternalServer, ext_server.server_id)).webhook
+                        elif server.channel_id == message.channel.id:
+                            user = await self.find('u', message.author.id)
+                            username = user.display_name
+                            webhook_url = os.getenv("FEEDBACK_WEBHOOK")
+                        async with aiohttp.ClientSession() as webhook_session:
+                            webhook = Webhook.from_url(webhook_url, adapter=AsyncWebhookAdapter(webhook_session))
+                            if len(message.attachments) == 0:
+                                await webhook.send(message.content, username=username, avatar_url=str(user.avatar_url))
+                            else:
+                                for attachment in message.attachments:
+                                    await webhook.send(content=None, username=username, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
+                        
                                                 
    
     @commands.command()

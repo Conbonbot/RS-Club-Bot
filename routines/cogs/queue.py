@@ -63,7 +63,7 @@ club_channels = {
 }
 
 
-from routines.tables import Queue, Data, Temp, Stats, Event, ExternalServer, Talking, Banned
+from routines.tables import Queue, Data, Temp, Stats, Event, ExternalServer, Talking, Banned, Feedback
 from routines import sessionmaker
 from routines import engine
 import random
@@ -177,14 +177,25 @@ class RSQueue(commands.Cog, name='Queue'):
 
 
     @commands.command()
-    async def send(self, ctx, server_id: int, *message):
+    async def feedback_connect(self, ctx, server_id: int):
         if ctx.author.id == 384481151475122179:
-            message_str = ' '.join(message)
             async with sessionmaker() as session:
-                server = await session.get(ExternalServer, server_id)
-                async with aiohttp.ClientSession() as webhook_session:
-                    webhook = Webhook.from_url(server.webhook, adapter=AsyncWebhookAdapter(webhook_session))
-                    await webhook.send(message_str, username="Conbon", avatar_url=str(ctx.author.avatar_url))
+                channel = (await session.get(ExternalServer, server_id)).channel_id
+                feedback_add = Feedback(server_id=server_id, channel_id=channel)
+                session.add(feedback_add)
+                await session.commit()
+            await ctx.send("Connected")
+        else:
+            await ctx.send("This command can only be used by Conbonbot")
+
+    @commands.command()
+    async def feedback_disconnect(self, ctx, server_id: int):
+        if ctx.author.id == 384481151475122179:
+            async with sessionmaker() as session:
+                feedback = await session.get(Feedback, server_id)
+                await session.delete(feedback)
+                await session.commit()
+            await ctx.send("Disconnected")
         else:
             await ctx.send("This command can only be used by Conbonbot")
 
