@@ -39,6 +39,9 @@ import requests
 from discord import Webhook, AsyncWebhookAdapter
 import aiohttp
 
+import cProfile
+import pstats
+
 
 
 from dotenv import load_dotenv
@@ -356,45 +359,20 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
 
     @commands.command(aliases=["in", "i"])
     async def _in(self, ctx, level=None, length=60):
-        async with sessionmaker() as session:
-            queues = list((await session.execute(select(Queue))).scalars())
-            servers = list((await session.execute(select(ExternalServer))).scalars())
-        if ctx.guild.id == clubs_server_id: # Run the command as usual
-            level = self.rs_channel[str(ctx.message.channel)]
-            rsqueue = self.bot.get_cog('Queue')
-            await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True, queues=queues, servers=servers)
-        else:
-            server = await self.get(servers, "server_id", ctx.guild.id)
-            if server.show:
-                # Check if they have the right role with Externalserver (or if it is above it)
-                if level is None:
-                    # Get their current rs level and add them to the queue
-                    role_ids = []
-                    role_types = ["rs", "rs_34", "rs_silent"]
-                    for role in role_types:
-                        for i in range(5,12):
-                            check_role = role[:2] + str(i) + role[2:]
-                            if getattr(server, check_role) is not None:
-                                role_ids.append((i, getattr(server, check_role)))
-                    role_ids = role_ids[::-1]
-                    confirmed_roles = []
-                    for user_roles in ctx.author.roles:
-                        for (rs_level, id) in role_ids:
-                            if user_roles.id == id:
-                                confirmed_roles.append(rs_level)
-                    confirmed_roles.sort(reverse=True)
-                    if len(confirmed_roles) == 0:
-                        await ctx.send("You have no roles matching any known rs levels on this server.")
-                    else:
-                        level = confirmed_roles[0]
-                        rsqueue = self.bot.get_cog('Queue')
-                        await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True, queues=queues, servers=servers)
-                else:
-                    # check main, 3/4, and silent roles
-                    level_role = getattr(server, "rs" + str(level))
-                    level_34_role = getattr(server, "rs" + str(level) + "_34")
-                    level_silent_role = getattr(server, "rs" + str(level) + "_silent")
-                    if level_role is not None or level_34_role is not None or level_silent_role is not None:
+        with cProfile.Profile() as pr:
+            async with sessionmaker() as session:
+                queues = list((await session.execute(select(Queue))).scalars())
+                servers = list((await session.execute(select(ExternalServer))).scalars())
+            if ctx.guild.id == clubs_server_id: # Run the command as usual
+                level = self.rs_channel[str(ctx.message.channel)]
+                rsqueue = self.bot.get_cog('Queue')
+                await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True, queues=queues, servers=servers)
+            else:
+                server = await self.get(servers, "server_id", ctx.guild.id)
+                if server.show:
+                    # Check if they have the right role with Externalserver (or if it is above it)
+                    if level is None:
+                        # Get their current rs level and add them to the queue
                         role_ids = []
                         role_types = ["rs", "rs_34", "rs_silent"]
                         for role in role_types:
@@ -404,23 +382,52 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                                     role_ids.append((i, getattr(server, check_role)))
                         role_ids = role_ids[::-1]
                         confirmed_roles = []
-                        has_role = False
                         for user_roles in ctx.author.roles:
                             for (rs_level, id) in role_ids:
                                 if user_roles.id == id:
-                                    if int(rs_level) >= int(level):
-                                        has_role = True
-                                        break
-                        if has_role:
+                                    confirmed_roles.append(rs_level)
+                        confirmed_roles.sort(reverse=True)
+                        if len(confirmed_roles) == 0:
+                            await ctx.send("You have no roles matching any known rs levels on this server.")
+                        else:
+                            level = confirmed_roles[0]
                             rsqueue = self.bot.get_cog('Queue')
                             await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True, queues=queues, servers=servers)
                     else:
-                        await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
-            else:
-                msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
-                await asyncio.sleep(45)
-                await ctx.message.delete()
-                await msg.delete()
+                        # check main, 3/4, and silent roles
+                        level_role = getattr(server, "rs" + str(level))
+                        level_34_role = getattr(server, "rs" + str(level) + "_34")
+                        level_silent_role = getattr(server, "rs" + str(level) + "_silent")
+                        if level_role is not None or level_34_role is not None or level_silent_role is not None:
+                            role_ids = []
+                            role_types = ["rs", "rs_34", "rs_silent"]
+                            for role in role_types:
+                                for i in range(5,12):
+                                    check_role = role[:2] + str(i) + role[2:]
+                                    if getattr(server, check_role) is not None:
+                                        role_ids.append((i, getattr(server, check_role)))
+                            role_ids = role_ids[::-1]
+                            confirmed_roles = []
+                            has_role = False
+                            for user_roles in ctx.author.roles:
+                                for (rs_level, id) in role_ids:
+                                    if user_roles.id == id:
+                                        if int(rs_level) >= int(level):
+                                            has_role = True
+                                            break
+                            if has_role:
+                                rsqueue = self.bot.get_cog('Queue')
+                                await rsqueue.everything(ctx, "+", 1, int(level), length, ctx.channel.id, True, queues=queues, servers=servers)
+                        else:
+                            await ctx.send(f"RS{level} role not set up on this server. Set it with the `!level` command.")
+                else:
+                    msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
+                    await asyncio.sleep(45)
+                    await ctx.message.delete()
+                    await msg.delete()
+        stats = pstats.Stats(pr)
+        stats.sort_stats(pstats.SortKey.TIME)
+        stats.dump_stats(filename='profiling.prof')
 
     @commands.command(aliases=["o"])
     async def out(self, ctx, level=None):

@@ -68,6 +68,9 @@ from routines import sessionmaker
 from routines import engine
 import random
 
+import cProfile
+import pstats
+
 if TESTING:
     clubs_server_id = 805959424081920022
 else:
@@ -847,9 +850,9 @@ class RSQueue(commands.Cog, name='Queue'):
                                     await self.remove_players(ctx, level, queues, servers)
                                 else:
                                     await self.joining_queue(ctx, level, queues, servers)
-                                async with sessionmaker() as session:
-                                    session.add(User_entering_queue)
-                                    await session.commit()
+                                    async with sessionmaker() as session:
+                                        session.add(User_entering_queue)
+                                        await session.commit()
                             else:
                                 LOGGER.debug("They were found on multiple queues, find all queues")
                                 # see what queue they are on, and either update their current position or new position
@@ -888,9 +891,9 @@ class RSQueue(commands.Cog, name='Queue'):
                                                         await self.remove_players(ctx, level, queues, servers)
                                                     else:
                                                         await self.joining_queue(ctx, level, queues, servers)
-                                                    async with sessionmaker() as session:
-                                                        session.add(user)
-                                                        await session.commit()
+                                                        async with sessionmaker() as session:
+                                                            session.add(user)
+                                                            await session.commit()
                                                 else:
                                                     # They were found on this queue, so update their position
                                                     for i in range(len(queues)):
