@@ -427,10 +427,13 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
 
     @commands.command(aliases=["o"])
     async def out(self, ctx, level=None):
+        async with sessionmaker() as session:
+            queues = list((await session.execute(select(Queue))).scalars())
+            servers = list((await session.execute(select(ExternalServer))).scalars())
         if ctx.guild.id == clubs_server_id: # Run the command as usual
             level = self.rs_channel[str(ctx.message.channel)]
             rsqueue = self.bot.get_cog('Queue')
-            await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id)
+            await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, queues=queues, servers=servers)
             #await ctx.invoke(self.bot.get_command('_out'), level=level)
         else:
             async with sessionmaker() as session:
@@ -451,10 +454,10 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                                 elif len(levels) == 1:
                                     print("Removing level", levels[0])
                                     rsqueue = self.bot.get_cog('Queue')
-                                    await rsqueue.everything(ctx, "-", 1, levels[0], 60, ctx.channel.id, external=True)
+                                    await rsqueue.everything(ctx, "-", 1, levels[0], 60, ctx.channel.id, external=True, queues=queues, servers=servers)
                     else:
                         rsqueue = self.bot.get_cog('Queue')
-                        await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True)
+                        await rsqueue.everything(ctx, "-", 1, level, 60, ctx.channel.id, external=True, force=True, queues=queues, servers=servers)
                 else:
                     msg = await ctx.send("The queueing system has been turned off on this server. If you want to turn it back on, have an admin run the `!show` command")
                     await asyncio.sleep(45)
