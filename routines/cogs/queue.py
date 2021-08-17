@@ -301,11 +301,11 @@ class RSQueue(commands.Cog, name='Queue'):
                     the_clubs_channel = await self.find('c', club_channels[queue.level])
                     count = await self.amount(queue.level, queues)
                     await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.level}/4)")
-                    servers = (await session.execute(select(ExternalServer))).scalars()
+                    servers = (await session.execute(select(ExternalServer).where(ExternalServer.show == True))).scalars()
                     for server in servers:
-                        if server.show and server.min_rs <= queue.level <= server.max_rs:
+                        if server.min_rs <= queue.level <= server.max_rs:
                             channel = await self.find('c', server.channel_id)
-                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.level}/4)")
+                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
                     # Remove 'still in for a...' message (if it works)
                     #temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
                     conditions  = and_(Temp.user_id == queue.user_id, Temp.level == queue.level)
