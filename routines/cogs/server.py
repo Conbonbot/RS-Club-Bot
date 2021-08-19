@@ -358,7 +358,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
 
 
     @commands.command(aliases=["in", "i"])
-    async def _in(self, ctx, level=None, length=60):
+    async def _in(self, ctx, level=None, length=25):
         async with sessionmaker() as session:
             queues = list((await session.execute(select(Queue))).scalars())
             servers = list((await session.execute(select(ExternalServer))).scalars())

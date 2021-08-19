@@ -552,7 +552,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def add_bot(self, ctx, level, amount):
         if TESTING:
             async with sessionmaker() as session:
-                user = Queue(server_id=ctx.guild.id, user_id=809871917946634261, amount=int(amount), level=int(level), time=int(time.time()), length=60, channel_id=ctx.channel.id, nickname="RS Club Temp Bot")
+                user = Queue(server_id=ctx.guild.id, user_id=809871917946634261, amount=int(amount), level=int(level), time=int(time.time()), length=25, channel_id=ctx.channel.id, nickname="RS Club Temp Bot")
                 session.add(user)
                 await session.commit()
             await ctx.send("Added")
@@ -718,15 +718,15 @@ class RSQueue(commands.Cog, name='Queue'):
 
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
-    async def _one(self, ctx, level=None, length=60):
+    async def _one(self, ctx, level=None, length=25):
         await self.pre_everything(ctx, level, length)
 
     @commands.command(name='2', help="Type +2/-2, which will add you/remove you and another person to/from a RS Queue")
-    async def _two(self, ctx, level=None, length=60):
+    async def _two(self, ctx, level=None, length=25):
         await self.pre_everything(ctx, level, length)
 
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
-    async def _three(self, ctx, level=None, length=60):
+    async def _three(self, ctx, level=None, length=25):
         await self.pre_everything(ctx, level, length)
 
     async def pre_everything(self, ctx, level, length):
@@ -981,7 +981,7 @@ class RSQueue(commands.Cog, name='Queue'):
         
 
     @commands.command(help="Use this command (!i or !in) to join a RS Queue")
-    async def rs(self, ctx, level=None, length=60, external=False):
+    async def rs(self, ctx, level=None, length=25, external=False):
         async with sessionmaker() as session:
             queues = list((await session.execute(select(Queue))).scalars())
             servers = list((await session.execute(select(ExternalServer))).scalars())
