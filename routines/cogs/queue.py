@@ -300,7 +300,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     # get club channel and send leaving message to all servers
                     the_clubs_channel = await self.find('c', club_channels[queue.level])
                     count = await self.amount(queue.level, queues)
-                    await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.level}/4)")
+                    await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
                     servers = (await session.execute(select(ExternalServer).where(ExternalServer.show == True))).scalars()
                     for server in servers:
                         if server.min_rs <= queue.level <= server.max_rs:
