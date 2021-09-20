@@ -543,7 +543,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
                                         else:
                                             for attachment in message.attachments:
                                                 await webhook.send(content=None, username=message.author.display_name, avatar_url=str(user.avatar_url), file=(await attachment.to_file()))
-            else: # Check global chat/sending
+            else: # Check global chat/Feedback
                 async with sessionmaker() as session:
                     # Sending from server to #feedback
                     webhook_url = None

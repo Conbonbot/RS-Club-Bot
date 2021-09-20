@@ -202,6 +202,16 @@ class RSQueue(commands.Cog, name='Queue'):
             return instances
 
 
+    #TODO: temp commands for sqlalchemy
+    @commands.command()
+    async def test(self, ctx):
+        async with sessionmaker() as session:
+            await ctx.send(type(session))
+            await ctx.send(type(sessionmaker))
+
+            
+
+
 
     @commands.command()
     async def feedback_connect(self, ctx, server_id: int):
@@ -305,7 +315,8 @@ class RSQueue(commands.Cog, name='Queue'):
                     for server in servers:
                         if server.min_rs <= queue.level <= server.max_rs:
                             channel = await self.find('c', server.channel_id)
-                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
+                            if channel != -1:
+                                await channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
                     # Remove 'still in for a...' message (if it works)
                     #temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
                     conditions  = and_(Temp.user_id == queue.user_id, Temp.level == queue.level)
