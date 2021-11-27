@@ -1,4 +1,5 @@
 #!/bin/python3
+from importlib.metadata import metadata
 import logging
 import os
 
@@ -16,8 +17,9 @@ from sqlalchemy.engine.url import URL
 import asyncio
 
 import routines
-
 from discord_slash import SlashCommand, SlashContext
+
+
 
 load_dotenv()
 
@@ -60,25 +62,15 @@ DB_TABLES = [
 class RSClubBot(commands.Bot):
     def __init__(self, token: str, **kwargs):
         """Initializes database, routines and runs bot.
-
         Args:
             token: The token for the discord connection.
         """
-        self._prep_db()
         super(RSClubBot, self).__init__(**kwargs)
         routines.setup_coroutines(self)
         self.run(token)
 
-    @staticmethod
-    def _prep_db():
-        """Makes sure the database has the required tables for the bot."""
-        with psycopg2.connect(host=os.getenv('HOST'), database=os.getenv('DATABASE'), user=os.getenv('NAME'), password=os.getenv('PASSWORD')) as conn:
-            cur = conn.cursor()
-            for table in DB_TABLES:
-                LOGGER.debug(f"Creating DB table: {table}")
-                cur.execute(f'CREATE TABLE IF NOT EXISTS {table}')
-            conn.commit()
-            cur.close()
+    
+
 
 
 

@@ -68,6 +68,7 @@ from routines import sessionmaker
 from routines import engine
 import random
 
+
 import cProfile
 import pstats
 
@@ -200,15 +201,6 @@ class RSQueue(commands.Cog, name='Queue'):
                 if getattr(single, type) == value:
                     instances.append(single)
             return instances
-
-
-    #TODO: temp commands for sqlalchemy
-    @commands.command()
-    async def test(self, ctx):
-        async with sessionmaker() as session:
-            await ctx.send(type(session))
-            await ctx.send(type(sessionmaker))
-
             
 
 

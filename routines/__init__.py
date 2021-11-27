@@ -21,10 +21,11 @@ postgres_URL = URL.create('postgresql+asyncpg',
                           password=os.getenv('PASSWORD'),
                           host=os.getenv('HOST'))
 
+from routines import tables
+Base = tables.Base
 
 engine = create_async_engine(postgres_URL, echo=True, pool_size=10, max_overflow=20)
 sessionmaker = maker(bind=engine, expire_on_commit=False, class_=AsyncSession)
-
 
 
 class Routine(object):
@@ -37,15 +38,24 @@ class Routine(object):
         actions = getattr(cls, 'actions', None)
         return actions
 
+        
+
 
 def setup_coroutines(bot: commands.bot):
     """Main entrypoint to dynamically configure bot routines."""
     LOGGER.debug('Registering co-routines.')
+    database_creation(bot)
     on_ready_setup(bot)
     slash_command_setup(bot)
     command_setup(bot)
     cog_setup(bot)
 
+def database_creation(bot: commands.bot):
+    from routines.create_database import CreateDatabaseEvent
+    for event in CreateDatabaseEvent.__subclasses__():
+        LOGGER.debug(f'Registering event: {event.__name__}')
+        setup = event(bot)
+        setup.actions()
 
 def on_ready_setup(bot: commands.bot):
     """Configures on_ready coroutines."""
@@ -54,6 +64,8 @@ def on_ready_setup(bot: commands.bot):
         LOGGER.debug(f'Registering event: {event.__name__}')
         setup = event(bot)
         setup.actions()
+
+    
 
 def slash_command_setup(bot: commands.bot):
     """Configures Slash Command Setup"""
