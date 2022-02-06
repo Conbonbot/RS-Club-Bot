@@ -219,47 +219,49 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def connect(self, ctx, min_rs=None, max_rs=None):
-        if max_rs is None or min_rs is None:
-            await ctx.send("Please specify this server's min and max rs level in the `!connect` command, i.e. `!connect 5 9`")
-        if int(max_rs) < int(min_rs):
-            await ctx.send("Your server's maximum rs level should be higher than your minimum.")
-        elif int(min_rs) > 4 and int(max_rs) < 12:
-            async with sessionmaker() as session: # check to see if the server is already in the database
-                data = (await session.execute(select(ExternalServer).where(ExternalServer.server_id == ctx.guild.id))).scalars().all()
-            if len(data) == 0: # Add the server to the ExternalServer Database
-                async with sessionmaker() as session:
-                    LOGGER.debug("Adding server to database")
-                    webhook = await ctx.channel.create_webhook(name="Global Chat Webhook (The Clubs)")
-                    Server_enter = ExternalServer(server_id=ctx.guild.id, server_name=ctx.guild.name, channel_id=ctx.channel.id, webhook=str(webhook.url), min_rs=int(min_rs), max_rs=int(max_rs), global_chat=False, show=True)
-                    session.add(Server_enter)
-                    await session.commit()
-                    print_str = "This server has been connected to The Clubs!\n"
-                    print_str += f"The min/max rs of this server has been set to: rs{min_rs}-rs{max_rs}\n"
-                    print_str += "If you messed up the max rs level of this server while running the `!connect` command, just run the command again with the correct rs level(s) and it will update the rs level of the server.\n"
-                    print_str += "Now comes the fun part, setting up the rs level of users on this server!\n"
-                    print_str += "Below is everything you'll need to know about setting this up, and if you need to see this again, run `!help external`, or to see all functions of this bot, `!help`\n"
-                    await ctx.send(print_str)
-                    external_embed = discord.Embed(title='External', color=discord.Color.green())
-                    if TESTING:
-                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=537193536&scope=bot) and follow the steps")
-                    else:
-                        # Fix this
-                        external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link]() and follow the steps")
-                    external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
-                    external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
-                    external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
-                    external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # type @<>` command.")
-                    external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
-                    external_embed.add_field(name="Joining/Leaving/Showing Queues", value=f"Go to the queue section of the `!help` command to get information on the queueing system (`!help q`).")
-                    await ctx.send(embed=external_embed)
-            else: # They were found in the database, update their max rs level
-                async with sessionmaker() as session:
-                    server = (await session.get(ExternalServer, ctx.guild.id))
-                    server.max_rs = int(max_rs)
-                    await session.commit()
-                    await ctx.send(f"This server has already been connected to The Clubs, but now the max rs level of this server is {max_rs}")
-        else:
-            await ctx.send(f"The Clubs only support RS 5-11, {max_rs} is outside that range.")
+        await ctx.send("This feature has currently been disabled")
+        if(False):
+            if max_rs is None or min_rs is None:
+                await ctx.send("Please specify this server's min and max rs level in the `!connect` command, i.e. `!connect 5 9`")
+            if int(max_rs) < int(min_rs):
+                await ctx.send("Your server's maximum rs level should be higher than your minimum.")
+            elif int(min_rs) > 4 and int(max_rs) < 12:
+                async with sessionmaker() as session: # check to see if the server is already in the database
+                    data = (await session.execute(select(ExternalServer).where(ExternalServer.server_id == ctx.guild.id))).scalars().all()
+                if len(data) == 0: # Add the server to the ExternalServer Database
+                    async with sessionmaker() as session:
+                        LOGGER.debug("Adding server to database")
+                        webhook = await ctx.channel.create_webhook(name="Global Chat Webhook (The Clubs)")
+                        Server_enter = ExternalServer(server_id=ctx.guild.id, server_name=ctx.guild.name, channel_id=ctx.channel.id, webhook=str(webhook.url), min_rs=int(min_rs), max_rs=int(max_rs), global_chat=False, show=True)
+                        session.add(Server_enter)
+                        await session.commit()
+                        print_str = "This server has been connected to The Clubs!\n"
+                        print_str += f"The min/max rs of this server has been set to: rs{min_rs}-rs{max_rs}\n"
+                        print_str += "If you messed up the max rs level of this server while running the `!connect` command, just run the command again with the correct rs level(s) and it will update the rs level of the server.\n"
+                        print_str += "Now comes the fun part, setting up the rs level of users on this server!\n"
+                        print_str += "Below is everything you'll need to know about setting this up, and if you need to see this again, run `!help external`, or to see all functions of this bot, `!help`\n"
+                        await ctx.send(print_str)
+                        external_embed = discord.Embed(title='External', color=discord.Color.green())
+                        if TESTING:
+                            external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link](https://discord.com/api/oauth2/authorize?client_id=805960284543385650&permissions=537193536&scope=bot) and follow the steps")
+                        else:
+                            # Fix this
+                            external_embed.add_field(name="Connecting your server to the clubs", value=f"If you want to connect your corporation's discord server to The Clubs so you can run Red Stars from the comfort of your discord server, simply add the bot to your discord server with [this link]() and follow the steps")
+                        external_embed.add_field(name="First Time Setup", value=f"Run `!connect # %` (where `#` is the minimum rs level of your server and `%` is the maximum), and your server will be connected to The Clubs.")
+                        external_embed.add_field(name="Setting up max RS levels", value=f"To change the min/max RS level of your server, run `!connect # %` where `#` is the minimum rs level of your server and `%` is the maximum.")
+                        external_embed.add_field(name="Users and Queues", value=f"To allow users to join queues, they'll need to have a role specifying their rs level. In order to do this, use the `!level # type @<>` command, where `#` is the rs level, and `type` is either `all`, `3/4`, or `silent`. This allows users to decide if how they want to get notified (everytime, when the queue is 3/4, or not at all) `@<>` is the role that players in that rs level have. If you want to change the role, simply run the command again.")
+                        external_embed.add_field(name="Seeing Roles", value=f"Use the `!current` command to show what roles are currently connected to the bot. If you want to add more, use the `!level # type @<>` command.")
+                        external_embed.add_field(name="Disconnecting", value=f"If you want this server to be disconnected from The Clubs, have an admin run the `!disconnect` command.")
+                        external_embed.add_field(name="Joining/Leaving/Showing Queues", value=f"Go to the queue section of the `!help` command to get information on the queueing system (`!help q`).")
+                        await ctx.send(embed=external_embed)
+                else: # They were found in the database, update their max rs level
+                    async with sessionmaker() as session:
+                        server = (await session.get(ExternalServer, ctx.guild.id))
+                        server.max_rs = int(max_rs)
+                        await session.commit()
+                        await ctx.send(f"This server has already been connected to The Clubs, but now the max rs level of this server is {max_rs}")
+            else:
+                await ctx.send(f"The Clubs only support RS 5-11, {max_rs} is outside that range.")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -358,7 +360,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
 
 
     @commands.command(aliases=["in", "i"])
-    async def _in(self, ctx, level=None, length=25):
+    async def _in(self, ctx, level=None, length=20):
         rsqueue = self.bot.get_cog('Queue')
         await rsqueue.entering_queue_basic_checks(ctx, int(level), length, 1, True)
 

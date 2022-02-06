@@ -477,7 +477,10 @@ class RSQueue(commands.Cog, name='Queue'):
         for queue in queues:
             msg += f"Checking rs{queue.level}\n"
             minutes = int((time.time() - queue.time) / 60)
-            msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes} minutes left until user is pinged\n"
+            if(queue.length < minutes):
+                msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes} minutes left until user is pinged\n"
+            else:
+                msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes+5} minutes until the user is removed\n"
             if minutes == queue.length:
                 msg += f"-- Attempting to ping {queue.nickname}\n"
                 # Ping the user
@@ -726,21 +729,21 @@ class RSQueue(commands.Cog, name='Queue'):
             await message.delete()
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
-    async def _one(self, ctx, level=None, length=25):
+    async def _one(self, ctx, level=None, length=20):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
             await self.removing_from_queue_check(ctx, level, ctx.message.content[1])
 
     @commands.command(name='2', help="Type +2/-2, which will add you/remove you and another person to/from a RS Queue")
-    async def _two(self, ctx, level=None, length=25):
+    async def _two(self, ctx, level=None, length=20):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
             await self.removing_from_queue_check(ctx, level, ctx.message.content[1])
 
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
-    async def _three(self, ctx, level=None, length=25):
+    async def _three(self, ctx, level=None, length=20):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
@@ -886,13 +889,13 @@ class RSQueue(commands.Cog, name='Queue'):
             else:
                 # Check if they don't exist on this queue
                 if user_current_queue is None:
-                    user = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=count, level=level, time=int(time.time()), length=length, channel_id=ctx.channel.id, nickname=ctx.author.display_name)
+                    user = Queue(server_id=ctx.guild.id, user_id=ctx.author.id, amount=count, level=level, time=int(time.time()), length=int(length), channel_id=ctx.channel.id, nickname=ctx.author.display_name)
                     session.add(user)
                 # They were found in this queue, so update their position
                 else:
                     user_current_queue.amount += count
                     user_current_queue.time = int(time.time())
-                    user_current_queue.length = length
+                    user_current_queue.length = int(length)
                 if current_queue_status + count < 4:
                     await self.joining_queue(ctx, session, level)
                 else:
