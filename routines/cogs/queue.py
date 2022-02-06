@@ -328,7 +328,7 @@ class RSQueue(commands.Cog, name='Queue'):
         club_guild = await self.find('g', clubs_server_id)
         if club == 1:
             # Print queue to clubs server
-            await self.print_queue(club_guild, club_channel, level)
+            await self.print_queue(session, club_guild, club_channel, level)
             await club_channel.send(f"RS{level} Ready! {clubs_string_people}")
             if len(connecting_servers) + club > 1:
                 sending = "```You will now be connected to the other servers that have players in this queue. Any messages you send here will show up on all other servers and visa versa.\n"
