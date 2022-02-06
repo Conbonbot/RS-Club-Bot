@@ -281,147 +281,139 @@ class RSRole(commands.Cog, name='Role'):
         # emoji=<PartialEmoji animated=False name='6️⃣' id=None> event_type='REACTION_ADD' 
         # member=<Member id=805960284543385650 name='RS Club Bot' discriminator='3869' bot=True nick=None 
         # guild=<Guild id=805959424081920022 name='RS Club Temp Server' shard_id=None chunked=False member_count=3>>>
-        external_rs_message = 0
-        external_rs_34_message = 0
-        external_rs_silent_message = 0
-        async with sessionmaker() as session:
+        async with sessionmaker.begin() as session:
+            external_rs_message = 0
+            external_rs_34_message = 0
+            external_rs_silent_message = 0
             server = await session.get(Reactions, payload.guild_id)
             if server is not None:
                 external_rs_message = server.rs_message_id
                 external_rs_34_message = server.rs_34_message_id
                 external_rs_silent_message = server.rs_silent_message_id
-        if(payload.message_id == 858406627220258836 or payload.message_id == external_rs_message): # Regular roles
-            reaction = str(payload.emoji)
-            try:
-                rs_role = self.emojis[reaction]
-            except:
-                rs_role = -2
-            if(not payload.member.bot):
-                if(rs_role != -2):
-                    welcome_message = None
-                    if(rs_role != -1):
-                        if payload.guild_id == clubs_server_id:
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
-                        else:
-                            async with sessionmaker() as session:
+            if(payload.message_id == 858406627220258836 or payload.message_id == external_rs_message): # Regular roles
+                reaction = str(payload.emoji)
+                try:
+                    rs_role = self.emojis[reaction]
+                except:
+                    rs_role = -2
+                if(not payload.member.bot):
+                    if(rs_role != -2):
+                        welcome_message = None
+                        if(rs_role != -1):
+                            if payload.guild_id == clubs_server_id:
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role}'))
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue of this red star level.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
-                    else:
-                        if payload.guild_id == clubs_server_id:
-                            for role in payload.member.roles:
-                                if(str(role).startswith("rs")):
-                                    await payload.member.remove_roles(role)
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged everytime someone joins a queue of this red star level.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
                         else:
-                            async with sessionmaker() as session:
+                            if payload.guild_id == clubs_server_id:
+                                for role in payload.member.roles:
+                                    if(str(role).startswith("rs")):
+                                        await payload.member.remove_roles(role)
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role
                                 role_id = getattr(server, rs_str)
-                            for role in payload.member.roles:
-                                if role.id == role_id:
-                                    await payload.member.remove_roles(role)
-                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    await msg.remove_reaction(reaction, payload.member)
-                    if(welcome_message is not None):
-                        await asyncio.sleep(60)
-                        await welcome_message.delete()
-        elif(payload.message_id == 858406639621898250 or payload.message_id == external_rs_34_message): # 3/4 roles
-            reaction = str(payload.emoji)
-            try:
-                rs_role = self.emojis[reaction]
-            except:
-                rs_role = -2
-            if(not payload.member.bot):
-                if(rs_role != -2):
-                    welcome_message = None
-                    if(rs_role != -1):
-                        if payload.guild_id == clubs_server_id:
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue of this red star level hits 3/4.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
-                        else:
-                            async with sessionmaker() as session:
+                                for role in payload.member.roles:
+                                    if role.id == role_id:
+                                        await payload.member.remove_roles(role)
+                        msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await msg.remove_reaction(reaction, payload.member)
+                        if(welcome_message is not None):
+                            await asyncio.sleep(60)
+                            await welcome_message.delete()
+            elif(payload.message_id == 858406639621898250 or payload.message_id == external_rs_34_message): # 3/4 roles
+                reaction = str(payload.emoji)
+                try:
+                    rs_role = self.emojis[reaction]
+                except:
+                    rs_role = -2
+                if(not payload.member.bot):
+                    if(rs_role != -2):
+                        welcome_message = None
+                        if(rs_role != -1):
+                            if payload.guild_id == clubs_server_id:
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} ¾ need1more'))
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue of this red star level hits 3/4.\nIf you want to suppress these RS pings, type !rsc to hide the channels, and type !rsc again to see the channels again.")
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role + "_34"
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue a queue of this red star level hits 3/4.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
-                    else:
-                        if payload.guild_id == clubs_server_id:
-                            for role in payload.member.roles:
-                                print(role)
-                                if(str(role).find("¾ need1more") != -1):
-                                    await payload.member.remove_roles(role)
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} 3/4 Role, and you will get pinged when a queue a queue of this red star level hits 3/4.\n If you want to stop receiving these pings, react with ❌ to remove the role.")
                         else:
-                            async with sessionmaker() as session:
+                            if payload.guild_id == clubs_server_id:
+                                for role in payload.member.roles:
+                                    print(role)
+                                    if(str(role).find("¾ need1more") != -1):
+                                        await payload.member.remove_roles(role)
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role + "_34"
                                 role_id = getattr(server, rs_str)
-                            for role in payload.member.roles:
-                                if role.id == role_id:
-                                    await payload.member.remove_roles(role)
-                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    await msg.remove_reaction(reaction, payload.member)
-                    if(welcome_message is not None):
-                        await asyncio.sleep(60)
-                        await welcome_message.delete()
-        elif(payload.message_id == 858406648041439282 or payload.message_id == external_rs_silent_message): # silent roles
-            reaction = str(payload.emoji)
-            try:
-                rs_role = self.emojis[reaction]
-            except:
-                rs_role = -2
-            if(not payload.member.bot):
-                if(rs_role != -2):
-                    welcome_message = None
-                    if(rs_role != -1):
-                        if payload.guild_id == clubs_server_id:
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
-                            await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to hide the hide the rs channels, type !rsc to hide them, and type !rsc to see them again.")
-                        else:
-                            async with sessionmaker() as session:
+                                for role in payload.member.roles:
+                                    if role.id == role_id:
+                                        await payload.member.remove_roles(role)
+                        msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await msg.remove_reaction(reaction, payload.member)
+                        if(welcome_message is not None):
+                            await asyncio.sleep(60)
+                            await welcome_message.delete()
+            elif(payload.message_id == 858406648041439282 or payload.message_id == external_rs_silent_message): # silent roles
+                reaction = str(payload.emoji)
+                try:
+                    rs_role = self.emojis[reaction]
+                except:
+                    rs_role = -2
+                if(not payload.member.bot):
+                    if(rs_role != -2):
+                        welcome_message = None
+                        if(rs_role != -1):
+                            if payload.guild_id == clubs_server_id:
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name=f'rs{rs_role} s'))
+                                await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, name='🌟'))
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome to the clubs {payload.member.mention}! You've been given the RS{rs_role} Silent role, and you will get pinged ONLY when a queue you joined hits 4/4.\nIf you want to hide the hide the rs channels, type !rsc to hide them, and type !rsc to see them again.")
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role + "_silent"
                                 role_id = getattr(server, rs_str)
                                 await payload.member.add_roles(discord.utils.get(payload.member.guild.roles, id=role_id))
-                            channel = await self.find('c', payload.channel_id)
-                            welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged ONLY when a queue you've joined hits 4/4.\nEnjoy your stay.")
-                    else:
-                        if payload.guild_id == clubs_server_id:
-                            for role in payload.member.roles:
-                                print(role)
-                                if(str(role).find(" s") != -1):
-                                    await payload.member.remove_roles(role)
+                                channel = await self.find('c', payload.channel_id)
+                                welcome_message = await channel.send(f"Welcome {payload.member.mention}! You've been given the RS{rs_role} Role, and you will get pinged ONLY when a queue you've joined hits 4/4.\nEnjoy your stay.")
                         else:
-                            async with sessionmaker() as session:
+                            if payload.guild_id == clubs_server_id:
+                                for role in payload.member.roles:
+                                    print(role)
+                                    if(str(role).find(" s") != -1):
+                                        await payload.member.remove_roles(role)
+                            else:
                                 server = await session.get(ExternalServer, payload.guild_id)
                                 rs_str = "rs" + rs_role + "_silent"
                                 role_id = getattr(server, rs_str)
-                            for role in payload.member.roles:
-                                if role.id == role_id:
-                                    await payload.member.remove_roles(role)
-                    msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                    await msg.remove_reaction(reaction, payload.member)
-                    if(welcome_message is not None):
-                        await asyncio.sleep(60)
-                        await welcome_message.delete()
-        else:
-            async with sessionmaker.begin() as session:
+                                for role in payload.member.roles:
+                                    if role.id == role_id:
+                                        await payload.member.remove_roles(role)
+                        msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                        await msg.remove_reaction(reaction, payload.member)
+                        if(welcome_message is not None):
+                            await asyncio.sleep(60)
+                            await welcome_message.delete()
+            else:
                 results = (await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars()
-            if len(results.all()) != 0:
-                if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
-                    if str(payload.emoji) == '✅':
-                        async with sessionmaker() as session:
+                if len(results.all()) != 0:
+                    if(int((await session.execute(select(Temp).where(Temp.message_id == payload.message_id))).scalars().first().user_id) == int(payload.member.id)):
+                        if str(payload.emoji) == '✅':
                             # Get user and update timestamp
                             user = await session.get(Temp, payload.message_id)
                             user.time = int(time.time())
@@ -439,9 +431,7 @@ class RSRole(commands.Cog, name='Role'):
                             # Delete them from the temp database
                             user = await session.get(Temp, payload.message_id)
                             await session.delete(user)
-                            await session.commit()
-                    elif str(payload.emoji) == '❌':
-                        async with sessionmaker() as session:
+                        elif str(payload.emoji) == '❌':
                             # Get the channel and message
                             channel = await self.find('c', payload.channel_id)
                             message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
@@ -457,21 +447,19 @@ class RSRole(commands.Cog, name='Role'):
                             count = (await self.amount(level))-1
                             club_channel = await self.find('c', club_channels[level])
                             await club_channel.send(f"{User_leave.nickname} has left RS{level} ({count}/4)")
-                            servers = (await session.execute(select(ExternalServer))).scalars()
+                            servers = (await session.execute(select(ExternalServer).where(ExternalServer.show == True))).scalars()
                             for server in servers:
                                 if server.min_rs <= User_leave.level <= server.max_rs:
                                     channel = await self.find('c', server.channel_id)
                                     await channel.send(f"{User_leave.nickname} has left RS{User_leave.level} ({count}/4)")
                             await session.delete(User_leave)
-                            await session.commit()
                             # Remove them from the temp database
                             await session.delete(user)
-                            await session.commit()
-                    elif(int(payload.member.id) != self.bot.user.id):
-                        message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-                        await message.remove_reaction(str(payload.emoji), payload.member)
-                        channel = await self.find('c', payload.channel_id)
-                        await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
+                        elif(int(payload.member.id) != self.bot.user.id):
+                            message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
+                            await message.remove_reaction(str(payload.emoji), payload.member)
+                            channel = await self.find('c', payload.channel_id)
+                            await channel.send(f"{payload.member.mention} Don't touch that! That's not for you to react to 🤬🤬🤬")
         
                     
 

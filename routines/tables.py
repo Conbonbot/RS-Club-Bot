@@ -45,6 +45,7 @@ class Temp(Base):
     channel_id = Column(BigInteger)
     user_id = Column(BigInteger)
     message_id = Column(BigInteger, primary_key=True)
+    timestamp = Column(BigInteger)
     amount = Column(SmallInteger)
     level = Column(SmallInteger)
 
