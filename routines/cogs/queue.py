@@ -482,7 +482,7 @@ class RSQueue(commands.Cog, name='Queue'):
             if minutes == queue.length:
                 # Ping the user
                 user = await self.find('u', queue.user_id)
-                channel = await self.find('c', queue.channel_id)
+                channel = await self.find('c', "hello")
                 message = await channel.send(f"{user.mention}, still in for an RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
                 await message.add_reaction('✅')
                 await message.add_reaction('❌')
@@ -512,6 +512,10 @@ class RSQueue(commands.Cog, name='Queue'):
                     message = await channel.fetch_message(temp.message_id)
                     await message.delete()
                     await session.delete(temp)
+
+    @check.error
+    async def check_error(self, ctx, error: commands.CommandError):
+        pass
 
     @tasks.loop(minutes=1.0)
     async def check_people(self):
