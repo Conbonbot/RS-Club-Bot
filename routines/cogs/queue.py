@@ -308,6 +308,7 @@ class RSQueue(commands.Cog, name='Queue'):
         # Print out the queue
         people = list((await session.execute(select(Queue).where(Queue.level == level))).scalars())
         servers = list((await session.execute(select(ExternalServer).where(ExternalServer.show == True))).scalars())
+        
         clubs_string_people = ""
         print_people = []
         external_server_ids = []
@@ -387,30 +388,23 @@ class RSQueue(commands.Cog, name='Queue'):
         # Track RS Stats and input into talking
         rs_run_id = await self.generate_run_id(session)
         timestamp = int(time.time())
-        async with sessionmaker() as session:
-            time_data = int(time.time())
-            # Add run to event database
-            if self.event:
-                event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
-                session.add(event_run)
-                await session.commit()
-            queue_people = (await session.execute(select(Queue).where(Queue.level == level))).scalars()
-            for person in queue_people:
-                print("TRACKING RS STATS AND ADDING TO TALKING DATABASE", person)
-                # If it was 4/4 and only one person don't track anything
-                if person.amount < 4:
-                    user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
-                    session.add(user_enter)
-                    if len(connecting_servers) > 1: # Only add them to the talking database if there's more than one total server
-                        user_talking_enter = Talking(run_id=rs_run_id, server_id=person.server_id, user_id=person.user_id, timestamp=timestamp, channel_id=person.channel_id)
-                        session.add(user_talking_enter)
-                    await session.commit()
-                pass
+        time_data = int(time.time())
+        # Add run to event database
+        if self.event:
+            event_run = Event(run_id=rs_run_id, score=0, timestamp=time_data)
+            session.add(event_run)
+        queue_people = (await session.execute(select(Queue).where(Queue.level == level))).scalars()
+        for person in queue_people:
+            print("TRACKING RS STATS AND ADDING TO TALKING DATABASE", person)
+            # If it was 4/4 and only one person don't track anything
+            if person.amount < 4:
+                user_enter = Stats(user_id=person.user_id, timestamp=time_data, rs_level=person.level, run_id=rs_run_id)
+                session.add(user_enter)
+                if len(connecting_servers) > 1: # Only add them to the talking database if there's more than one total server
+                    user_talking_enter = Talking(run_id=rs_run_id, server_id=person.server_id, user_id=person.user_id, timestamp=timestamp, channel_id=person.channel_id)
+                    session.add(user_talking_enter)
         # Remove everyone from the queue
-        async with sessionmaker() as session:
-            queue_people = (await session.execute(select(Queue).where(Queue.level == level))).scalars()
-            for person in queue_people:
-                await session.delete(person)
+        await session.execute(delete(Queue).where(Queue.level == level))
         rs_log_channel = await self.find('c', 805228742678806599)
         if rs_log_channel == -1:
             rs_log_channel = await self.find('c', 806370539148541952)
@@ -570,7 +564,6 @@ class RSQueue(commands.Cog, name='Queue'):
                     if(message is not None):
                         await message.delete()
                         
-
     @commands.command()
     async def add_bot(self, ctx, level, amount):
         if TESTING:
@@ -904,6 +897,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     await self.joining_queue(ctx, session, level)
                 else:
                     await self.remove_players(ctx, session, level)
+                    
         # Not allowed to join the queue because of {reason}
         else:
             await ctx.send(f"{ctx.author.mention}, {reason}")
@@ -979,7 +973,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
     @commands.command(aliases=["q"], help="(!queue or !q) will show the current RS Queues")
     async def queue(self, ctx, level=None):
-        async with sessionmaker() as session:
+        async with sessionmaker.begin() as session:
             servers = list((await session.execute(select(ExternalServer))).scalars())
             if ctx.guild.id == clubs_server_id:
                 level = self.rs_channel[str(ctx.message.channel)]
