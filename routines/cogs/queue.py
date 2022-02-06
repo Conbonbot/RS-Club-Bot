@@ -63,6 +63,8 @@ club_channels = {
     11 : os.getenv("RS11_CHANNEL")
 }
 
+error_channel_id = os.getenv("ERROR_CHANNEL")
+
 
 from routines.tables import Queue, Data, Temp, Stats, Event, ExternalServer, Talking, Banned, Feedback
 from routines import sessionmaker
@@ -474,79 +476,100 @@ class RSQueue(commands.Cog, name='Queue'):
                 if guild != -1 and channel != -1:
                     await self.print_queue(session, guild, channel, level, queues, False)
                     await channel.send(f"{ctx.author.display_name} has left the RS{level} Queue ({queue_status}/4)")
-
-    async def check(self, session):
+    
+    async def check(self, session, error_channel):
+        msg = ""
         queues = list((await session.execute(select(Queue))).scalars())
         for queue in queues:
+            msg += f"Checking rs{queue.level}\n"
             minutes = int((time.time() - queue.time) / 60)
+            msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes} minutes left until user is pinged\n"
             if minutes == queue.length:
+                msg += f"-- Attempting to ping {queue.nickname}\n"
                 # Ping the user
                 user = await self.find('u', queue.user_id)
-                channel = await self.find('c', "hello")
+                channel = await self.find('c', queue.channel_id)
                 message = await channel.send(f"{user.mention}, still in for an RS{queue.level}? React ✅ to stay in the queue, and ❌ to leave the queue")
                 await message.add_reaction('✅')
                 await message.add_reaction('❌')
+                msg += "-- Sent message\n"
                 # Add their user_id and message_id to database
-                add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, amount=queue.amount, level=queue.level)
+                add_temp = Temp(server_id=queue.server_id, channel_id=queue.channel_id, user_id=queue.user_id, message_id=message.id, timestamp=int(time.time()+500), amount=queue.amount, level=queue.level)
                 session.add(add_temp)
+                msg += "-- Added to temporary database\n"
             elif minutes >= queue.length + 5:
+                msg += f"-- Attempting to remove the user from the queue\n"
                 # Get user and delete them from the queue database
                 User_leave = (await session.get(Queue, (queue.user_id, queue.level)))
                 await session.delete(User_leave)
+                msg += "-- Removed from queue\n"
                 # get club channel and send leaving message to all servers
+                msg += "-- Sending message to servers\n"
                 the_clubs_channel = await self.find('c', club_channels[queue.level])
                 count = await self.amount(session, queue.level)
-                await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
+                await the_clubs_channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                 servers = (await session.execute(select(ExternalServer).where(ExternalServer.show == True))).scalars()
                 for server in servers:
                     if server.min_rs <= queue.level <= server.max_rs:
                         channel = await self.find('c', server.channel_id)
                         if channel != -1:
-                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count-queue.amount}/4)")
+                            await channel.send(f"{queue.nickname} has left RS{queue.level} ({count}/4)")
                 # Remove 'still in for a...' message (if it works)
-                #temp_access = await session.get(Temp, (queue.server_id, queue.channel_id, queue.user_id))
                 conditions  = and_(Temp.user_id == queue.user_id, Temp.level == queue.level)
-                temps = (await session.execute(select(Temp).where(conditions))).scalars()
+                temps = list((await session.execute(select(Temp).where(conditions))).scalars())
                 for temp in temps:
                     channel = await self.find('c', temp.channel_id)
-                    message = await channel.fetch_message(temp.message_id)
-                    await message.delete()
-                    await session.delete(temp)
-
-    @check.error
-    async def check_error(self, ctx, error: commands.CommandError):
-        pass
+                    message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
+                    if(message is not None):
+                        await message.delete()
+                        await session.delete(temp)
+                        msg += "--- Removed Message\n"
+        if(msg != ""):
+            await error_channel.send(msg)
 
     @tasks.loop(minutes=1.0)
     async def check_people(self):
+        channel = await self.find('c', error_channel_id)
+        await channel.send("---------- Starting Check ----------")
         try:
+            await channel.send("Trying")
             async with sessionmaker.begin() as session:
-                await self.check(session)
+                await self.check(session, channel)
         except Exception as e:
-            if not TESTING:
-                self.error, self.index = self.error+1, self.index+1
-                check_embed = discord.Embed(
-                    title="Failure",
-                    color=discord.Color.red()
-                )
-                check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-                check_embed.add_field(name="Exception", value=f"{e}")
-                check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
-            if TESTING:
-                pass
+            await channel.send("Reached Expection")
+            self.error, self.index = self.error+1, self.index+1
+            check_embed = discord.Embed(
+                title="Failure",
+                color=discord.Color.red()
+            )
+            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            check_embed.add_field(name="Exception", value=f"{e}")
+            check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
         else:
-            if not TESTING:
-                self.success, self.index = self.success+1, self.index+1
-                check_embed = discord.Embed(
-                    title="Success",
-                    color=discord.Color.green()
-                )
-                check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-                check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
+            await channel.send("Passed")
+            self.success, self.index = self.success+1, self.index+1
+            check_embed = discord.Embed(
+                title="Success",
+                color=discord.Color.green()
+            )
+            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
         finally:
-            if not TESTING:
-                channel = await self.find('c', 858406227523403776)
-                await channel.send(embed=check_embed)
+            await channel.send(embed=check_embed)
+        await channel.send("---------- Finished Check ----------")
+
+    @tasks.loop(hours=1.0)
+    async def remove_temp(self):
+        async with sessionmaker.begin() as session:
+            temps = list((await session.execute(select(Temp))).scalars())
+            for temp in temps:
+                if(temp.timestamp > int(time.time())):
+                    channel = await self.find('c', temp.channel_id)
+                    message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
+                    await session.delete(temp)
+                    if(message is not None):
+                        await message.delete()
+                        
 
     @commands.command()
     async def add_bot(self, ctx, level, amount):
