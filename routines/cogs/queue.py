@@ -385,7 +385,7 @@ class RSQueue(commands.Cog, name='Queue'):
             rs_run_id = await self.generate_run_id(session, True)
             await ctx.send(f"Your run id is: {rs_run_id}. Once the run is over, have one person from this queue run this command: `!rsinput {rs_run_id} <score>` (without the <>) and it will input the score into the leaderboards")
         # Track RS Stats and input into talking
-        rs_run_id = await self.generate_run_id()
+        rs_run_id = await self.generate_run_id(session)
         timestamp = int(time.time())
         async with sessionmaker() as session:
             time_data = int(time.time())
