@@ -477,7 +477,7 @@ class RSQueue(commands.Cog, name='Queue'):
         for queue in queues:
             msg += f"Checking rs{queue.level}\n"
             minutes = int((time.time() - queue.time) / 60)
-            if(queue.length < minutes):
+            if(queue.length-minutes > 5):
                 msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes} minutes left until user is pinged\n"
             else:
                 msg += f"- {queue.nickname} has been in the queue for {minutes} minutes, {queue.length-minutes+5} minutes until the user is removed\n"
@@ -654,17 +654,13 @@ class RSQueue(commands.Cog, name='Queue'):
     
     @commands.command()
     async def reset(self, ctx, level=None):
-        async with sessionmaker() as session:
-            queues = list((await session.execute(select(Queue))).scalars())
+        async with sessionmaker.begin() as session:
             if level is None:
                 await ctx.send("Please specify an rs level")
             else:
-                count = await self.amount(int(level), queues)
+                count = await self.amount(session, int(level))
                 if count > 3:
-                    users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
-                    for user in users:
-                        await session.delete(user)
-                    await session.commit()
+                    await session.execute(delete(Queue).where(Queue.level == int(level)))
                     await ctx.send("The queue has been reset")
                 else:
                     await ctx.send("The queue is not stuck at 4/4")
@@ -706,27 +702,14 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.has_role("mod")
     async def clear_database(self, ctx, level=None):
         if level is not None:
-            async with sessionmaker() as session:
-            #await ctx.send(f"The RS{level} queue has been cleared")
-                users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
-                for user in users:
-                    await session.delete(user)
-                await session.commit()
+            async with sessionmaker.begin() as session:
+                await session.execute(delete(Queue).where(Queue.level == int(level)))
             message = await ctx.send(f"RS{level} Queue cleared")
             await asyncio.sleep(5)
             await ctx.message.delete()
             await message.delete()
         else:
-            async with sessionmaker() as session:
-                for level in range(5, 12):
-                    users = (await session.execute(select(Queue).where(Queue.level == int(level)))).scalars()
-                    for user in users:
-                        await session.delete(user)
-                await session.commit()
-            message = await ctx.send("All queues cleared")
-            await asyncio.sleep(5)
-            await ctx.message.delete()
-            await message.delete()
+            await ctx.send("Please specify an rs level to clear")
 
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
     async def _one(self, ctx, level=None, length=20):
