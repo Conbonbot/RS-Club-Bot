@@ -362,7 +362,7 @@ class ServerJoin(commands.Cog, name='OnServerJoin'):
     @commands.command(aliases=["in", "i"])
     async def _in(self, ctx, level=None, length=20):
         rsqueue = self.bot.get_cog('Queue')
-        await rsqueue.entering_queue_basic_checks(ctx, int(level), length, 1, True)
+        await rsqueue.entering_queue_basic_checks(ctx, level, length, 1, True)
 
     @commands.command(aliases=["o"])
     async def out(self, ctx, level=None):

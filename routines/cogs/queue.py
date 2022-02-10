@@ -1,5 +1,6 @@
 import asyncio
 from asyncio.locks import Condition
+from logging import Logger
 import re
 import time
 from aiosqlite.core import LOG
@@ -140,6 +141,7 @@ class RSQueue(commands.Cog, name='Queue'):
         self.error = 0
         self.event = False
         self.check_people.start()
+        self.remove_temp.start()
         self.rs_channel = {
             "rs5-club": 5,
             "rs6-club": 6,
@@ -557,6 +559,7 @@ class RSQueue(commands.Cog, name='Queue'):
 
     @tasks.loop(hours=1.0)
     async def remove_temp(self):
+        LOGGER.debug("Running remove_temp")
         async with sessionmaker.begin() as session:
             temps = list((await session.execute(select(Temp))).scalars())
             for temp in temps:
@@ -566,6 +569,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     await session.delete(temp)
                     if(message is not None):
                         await message.delete()
+
                         
     @commands.command()
     async def add_bot(self, ctx, level, amount):
@@ -651,7 +655,7 @@ class RSQueue(commands.Cog, name='Queue'):
                     else:
                         levels = [str(queue.level) for queue in user_queues]
                         await ctx.send(f"You were found in these queues `{', '.join(levels)}`. Specify which one you'd like to refresh by adding the rs level to the end of the command.")
-    
+   
     @commands.command()
     async def reset(self, ctx, level=None):
         async with sessionmaker.begin() as session:
@@ -943,6 +947,7 @@ class RSQueue(commands.Cog, name='Queue'):
                         await msg.delete()
                         
     async def remove_from_queue(self, ctx, session, level, amount):
+        level = int(level)
         current_queue = await session.get(Queue, (ctx.author.id, level))
         # If they are removing themselves from the queue as a whole, remove them from the database
         if amount >= current_queue.amount:
