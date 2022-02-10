@@ -863,11 +863,11 @@ class RSQueue(commands.Cog, name='Queue'):
             user_current_queue = await session.get(Queue, (ctx.author.id, level))
             if user_current_queue is not None:
                 allowed_to_join = False
-                reason = "you are already in the queue you are trying to join. If you want to add yourself again to the queue, use the `+1` command"
-            elif  user_current_queue is not None and user_current_queue.channel_id != ctx.channel.id:
-                allowed_to_join = False
-                original_guild = await self.find("g", user_current_queue.server_id)
-                reason = f"you are trying to add yourself to a queue you are in from a different server. run the command ({ctx.message.content}) in the \"{original_guild.name}\" server"
+                if user_current_queue.channel_id != ctx.channel.id:
+                    original_guild = await self.find("g", user_current_queue.server_id)
+                    reason = f"you are trying to add yourself to a queue you are in from a different server. run the command ({ctx.message.content}) in the \"{original_guild.name}\" server"
+                else:
+                    reason = "you are already in the queue you are trying to join. If you want to add yourself again to the queue, use the `+1` command"
         if allowed_to_join:
             current_queue_status = await self.amount(session, level)
             # Check if queue would be more than 4/4 if they were added
