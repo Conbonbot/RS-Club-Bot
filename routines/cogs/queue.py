@@ -141,7 +141,6 @@ class RSQueue(commands.Cog, name='Queue'):
         self.error = 0
         self.event = False
         self.check_people.start()
-        self.remove_temp.start()
         self.rs_channel = {
             "rs5-club": 5,
             "rs6-club": 6,
@@ -557,20 +556,6 @@ class RSQueue(commands.Cog, name='Queue'):
             await channel.send(embed=check_embed)
         await channel.send("---------- Finished Check ----------")
 
-    @tasks.loop(hours=1.0)
-    async def remove_temp(self):
-        LOGGER.debug("Running remove_temp")
-        async with sessionmaker.begin() as session:
-            temps = list((await session.execute(select(Temp))).scalars())
-            for temp in temps:
-                if(temp.timestamp > int(time.time())):
-                    channel = await self.find('c', temp.channel_id)
-                    message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
-                    await session.delete(temp)
-                    if(message is not None):
-                        await message.delete()
-
-                        
     @commands.command()
     async def add_bot(self, ctx, level, amount):
         if TESTING:
@@ -592,7 +577,13 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send("Added")
         else:
             await ctx.send("This command can only be used in testing")
-            
+
+    @commands.command()
+    async def restart_tasks(self, ctx):
+        self.check_people.restart()
+        self.remove_temp.restart()
+        await ctx.send("Tasks have been restarted")
+
     @commands.command()
     async def github(self, ctx):
         await ctx.send(f"Here's the github link to the bot (https://github.com/Conbonbot/RS-Club-Bot). If you want to contribute feel free to make a pull request!")
@@ -715,6 +706,29 @@ class RSQueue(commands.Cog, name='Queue'):
         else:
             await ctx.send("Please specify an rs level to clear")
 
+    async def remove_temp_data(self):
+        LOGGER.info("Running remove_temp")
+        async with sessionmaker.begin() as session:
+            temps = list((await session.execute(select(Temp))).scalars())
+            for temp in temps:
+                if(temp.timestamp > int(time.time())):
+                    channel = await self.find('c', temp.channel_id)
+                    message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
+                    await session.delete(temp)
+                    if(message is not None):
+                        await message.delete()
+    
+    async def clear_temp(self):
+        while True:
+            await asyncio.gather(asyncio.sleep(3600), self.remove_temp_data())
+    
+    @commands.command()
+    @commands.has_role("mod")
+    async def start_temp_clear(self, ctx):
+        await ctx.send("Task has been started")
+        await self.clear_temp()
+        
+    
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
     async def _one(self, ctx, level=None, length=20):
         if ctx.message.content[0] == "+":
