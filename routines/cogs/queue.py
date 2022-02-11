@@ -711,12 +711,13 @@ class RSQueue(commands.Cog, name='Queue'):
         async with sessionmaker.begin() as session:
             temps = list((await session.execute(select(Temp))).scalars())
             for temp in temps:
-                if(temp.timestamp > int(time.time())):
+                if(temp.timestamp <= int(time.time())):
                     channel = await self.find('c', temp.channel_id)
-                    message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
                     await session.delete(temp)
-                    if(message is not None):
-                        await message.delete()
+                    if(channel != -1):
+                        message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
+                        if(message is not None):
+                            await message.delete()
     
     async def clear_temp(self):
         while True:
