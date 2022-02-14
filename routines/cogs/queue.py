@@ -731,21 +731,21 @@ class RSQueue(commands.Cog, name='Queue'):
         
     
     @commands.command(name='1', help="Type +1/-1, which will add you/remove you to/from a RS Queue")
-    async def _one(self, ctx, level=None, length=20):
+    async def _one(self, ctx, level=None, length=25):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
             await self.removing_from_queue_check(ctx, level, ctx.message.content[1])
 
     @commands.command(name='2', help="Type +2/-2, which will add you/remove you and another person to/from a RS Queue")
-    async def _two(self, ctx, level=None, length=20):
+    async def _two(self, ctx, level=None, length=25):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
             await self.removing_from_queue_check(ctx, level, ctx.message.content[1])
 
     @commands.command(name='3', help="Type +3/-4, which will add you/remove you and 2 other people to/from a RS Queue")
-    async def _three(self, ctx, level=None, length=20):
+    async def _three(self, ctx, level=None, length=25):
         if ctx.message.content[0] == "+":
             await self.entering_queue_basic_checks(ctx, level, length, ctx.message.content[1])
         elif ctx.message.content[0] == "-":
@@ -871,6 +871,7 @@ class RSQueue(commands.Cog, name='Queue'):
     async def queue_further_checks(self, ctx, session, level, length, count, external, only_allow_one):
         # Check for only_allow_one
         count = int(count)
+        level = int(level)
         allowed_to_join = True
         reason = ""
         user_current_queue = await session.get(Queue, (ctx.author.id, level))
