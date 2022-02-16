@@ -581,7 +581,6 @@ class RSQueue(commands.Cog, name='Queue'):
     @commands.command()
     async def restart_tasks(self, ctx):
         self.check_people.restart()
-        self.remove_temp.restart()
         await ctx.send("Tasks have been restarted")
 
     @commands.command()
