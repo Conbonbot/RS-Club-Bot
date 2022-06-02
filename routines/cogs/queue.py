@@ -2,6 +2,7 @@ import asyncio
 from asyncio.locks import Condition
 from logging import Logger
 import re
+from tabnanny import check
 import time
 from aiosqlite.core import LOG
 
@@ -159,6 +160,9 @@ class RSQueue(commands.Cog, name='Queue'):
             "3️⃣": 3,
             "4️⃣": 4
         }
+        
+        self.failed_embed = discord.Embed(title="Failure", color=discord.Color.red())
+        self.success_embed = discord.Embed(title="Success", color=discord.Color.green())
 
     # slash command testing
     @cog_ext.cog_slash(
@@ -536,25 +540,23 @@ class RSQueue(commands.Cog, name='Queue'):
         except Exception as e:
             await channel.send("Reached Expection")
             self.error, self.index = self.error+1, self.index+1
-            check_embed = discord.Embed(
-                title="Failure",
-                color=discord.Color.red()
-            )
-            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-            check_embed.add_field(name="Exception", value=f"{e}")
-            check_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
+            self.failed_embed.clear_fields()
+            self.failed_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            if len(e) > 1000:
+                self.failed_embed.add_field(name="Exception", value="Error too long to show")
+            else:
+                self.failed_embed.add_field(name="Exception", value=f"{e}")
+            self.failed_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
+            await channel.send(embed=self.failed_embed)
         else:
             await channel.send("Passed")
             self.success, self.index = self.success+1, self.index+1
-            check_embed = discord.Embed(
-                title="Success",
-                color=discord.Color.green()
-            )
-            check_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-            check_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
-        finally:
-            await channel.send(embed=check_embed)
-        await channel.send("---------- Finished Check ----------")
+            self.success_embed.clear_fields()
+            self.success_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
+            self.success_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
+            await channel.send(embed=self.success_embed)
+
+
 
     @commands.command()
     async def add_bot(self, ctx, level, amount):
