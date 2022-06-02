@@ -522,7 +522,7 @@ class RSQueue(commands.Cog, name='Queue'):
                 for temp in temps:
                     channel = await self.find('c', temp.channel_id)
                     message = discord.utils.get(await channel.history(limit=1000).flatten(), id=temp.message_id)
-                    if(message is not None):
+                    if message is not None:
                         await message.delete()
                         await session.delete(temp)
                         msg += "--- Removed Message\n"
@@ -532,13 +532,10 @@ class RSQueue(commands.Cog, name='Queue'):
     @tasks.loop(minutes=1.0)
     async def check_people(self):
         channel = await self.find('c', error_channel_id)
-        await channel.send("---------- Starting Check ----------")
         try:
-            await channel.send("Trying")
             async with sessionmaker.begin() as session:
                 await self.check(session, channel)
         except Exception as e:
-            await channel.send("Reached Expection")
             self.error, self.index = self.error+1, self.index+1
             self.failed_embed.clear_fields()
             self.failed_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
@@ -549,12 +546,18 @@ class RSQueue(commands.Cog, name='Queue'):
             self.failed_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
             await channel.send(embed=self.failed_embed)
         else:
-            await channel.send("Passed")
             self.success, self.index = self.success+1, self.index+1
             self.success_embed.clear_fields()
             self.success_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
             self.success_embed.add_field(name="Success/Total", value=f"{self.success}/{self.index} -> {(self.success)/(self.index)}")
             await channel.send(embed=self.success_embed)
+
+    @check_people.error
+    async def on_check_people_error(self):
+        channel = await self.find('c', error_channel_id)
+        await channel.send("Check people has stopped. Restarting...")
+        self.check_people.stop()
+        self.check_people.start()
 
 
 
