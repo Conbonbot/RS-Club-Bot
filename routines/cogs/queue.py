@@ -539,10 +539,7 @@ class RSQueue(commands.Cog, name='Queue'):
             self.error, self.index = self.error+1, self.index+1
             self.failed_embed.clear_fields()
             self.failed_embed.add_field(name="Timestamp", value=f"{int(time.time())}")
-            if len(e) > 1000:
-                self.failed_embed.add_field(name="Exception", value="Error too long to show")
-            else:
-                self.failed_embed.add_field(name="Exception", value=f"{e}")
+            self.failed_embed.add_field(name="Exception", value=f"An exception has occured, continuing tasks as usual")
             self.failed_embed.add_field(name="Error/Total", value=f"{self.error}/{self.index} -> {(self.error)/(self.index)}")
             await channel.send(embed=self.failed_embed)
         else:
