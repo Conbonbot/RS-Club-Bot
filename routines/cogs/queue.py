@@ -143,7 +143,6 @@ class RSQueue(commands.Cog, name='Queue'):
         self.event = False
         self.check_people.start()
         self.diagnose_problems.start()
-        self.restart_tasks.start()
         self.rs_channel = {
             "rs5-club": 5,
             "rs6-club": 6,
@@ -564,22 +563,6 @@ class RSQueue(commands.Cog, name='Queue'):
         if self.check_people.failed():
             self.check_people.stop()
             self.check_people.start()
-
-    @diagnose_problems.before_loop
-    async def wait_diagnose(self):
-        await self.bot.wait_until_ready()
-
-    @tasks.loop(hours=24.0)
-    async def restart_tasks(self):
-        self.check_people.stop()
-        self.check_people.start()
-
-        self.diagnose_problems.stop()
-        self.diagnose_problems.start()
-
-    @restart_tasks.before_loop
-    async def wait_restart(self):
-        await self.bot.wait_until_ready()
 
 
 
