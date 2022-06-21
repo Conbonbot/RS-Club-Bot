@@ -142,6 +142,8 @@ class RSQueue(commands.Cog, name='Queue'):
         self.error = 0
         self.event = False
         self.check_people.start()
+        self.diagnose_problems.start()
+        self.restart_tasks.start()
         self.rs_channel = {
             "rs5-club": 5,
             "rs6-club": 6,
@@ -557,6 +559,29 @@ class RSQueue(commands.Cog, name='Queue'):
         self.check_people.start()
 
 
+    @tasks.loop(hours=1.0)
+    async def diagnose_problems(self):
+        if self.check_people.failed():
+            self.check_people.stop()
+            self.check_people.start()
+
+    @diagnose_problems.before_loop
+    async def wait_diagnose(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=24.0)
+    async def restart_tasks(self):
+        self.check_people.stop()
+        self.check_people.start()
+
+        self.diagnose_problems.stop()
+        self.diagnose_problems.start()
+
+    @restart_tasks.before_loop
+    async def wait_restart(self):
+        await self.bot.wait_until_ready()
+
+
 
     @commands.command()
     async def add_bot(self, ctx, level, amount):
@@ -579,11 +604,6 @@ class RSQueue(commands.Cog, name='Queue'):
             await ctx.send("Added")
         else:
             await ctx.send("This command can only be used in testing")
-
-    @commands.command()
-    async def restart_tasks(self, ctx):
-        self.check_people.restart()
-        await ctx.send("Tasks have been restarted")
 
     @commands.command()
     async def github(self, ctx):
